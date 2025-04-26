@@ -1,0 +1,62 @@
+#!/bin/python3
+
+# Imports
+import sys
+from libjam import InputInterpreter
+from acmm_backend import ModManager
+
+# Inputs/Commands/Options configuration
+app = "acmm"
+description = "Assetto Corsa Mod Manager manages mods for Assetto Corsa"
+# help = "" # If you wish to set your own help page text
+commands = {
+'list':     {'function': 'list', 'requires_args': False,
+'description': 'Lists installed mods'},
+
+'install':  {'function': 'install', 'requires_args': True,
+'description': 'Installs the specified mod'},
+
+'remove':   {'function': 'remove_mods', 'requires_args': True,
+'description': 'Removes specified mods'},
+}
+options = {
+'car':      {'long': ['car', 'cars'],           'short': ['c'], 'option': 'list_cars',
+'description': 'Only list|install|remove cars'},
+
+'track':    {'long': ['track', 'tracks'],       'short': ['t'], 'option': 'list_tracks',
+'description': 'Only list|install|remove tracks'},
+
+'ppfilter': {'long': ['ppfilter', 'ppfilters'], 'short': ['p'], 'option': 'list_ppfilters',
+'description': 'Only list|install|remove PP filters'},
+
+'app':      {'long': ['app', 'apps'],           'short': ['a'], 'option': 'list_apps',
+'description': 'Only list|install|remove apps'},
+
+'all':      {'long': ['all'],                   'short': ['A'], 'option': 'list_all',
+'description': 'Do not filter out Kunos assets'},
+
+'kunos':    {'long': ['kunos'],                 'short': ['k'], 'option': 'only_kunos',
+'description': 'Filter out non Kunos assets'},
+}
+filter_options = ['list_cars', 'list_tracks', 'list_ppfilters', 'list_apps']
+
+# Processing user input
+arguments = sys.argv; arguments.remove(arguments[0])
+input_interpreter = InputInterpreter(app, description, commands, options)
+# input_interpreter.set_help(help) # If you wish to set your own help page text
+input_interpreter.interpret(arguments)
+options = input_interpreter.get_option_values()
+
+# Enabling all filters if none active
+disabled_filters = 0
+for filter_option in filter_options:
+  if options.get(filter_option) is False:
+    disabled_filters += 1
+if disabled_filters == len(filter_options):
+  for filter_option in filter_options:
+    options[filter_option] = True
+
+# Sending it off to ModManager
+mod_manager = ModManager(options)
+function = f"mod_manager.{input_interpreter.get_function()}"
+exec(function)
