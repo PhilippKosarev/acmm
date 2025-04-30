@@ -60,5 +60,3 @@ if disabled_filters == len(filter_options):
 mod_manager = ModManager(options)
 function = f"mod_manager.{captain.get_function()}"
 exec(function)
-
-# class Terminal:

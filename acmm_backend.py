@@ -1,8 +1,6 @@
-#!/bin/python3
-
 # Imports
+import sys
 from libjam import Typewriter, Drawer, Clipboard, Notebook, Flashcard
-import sys, os, glob, shutil, tomllib
 
 # Jam classes
 typewriter = Typewriter()
@@ -12,29 +10,46 @@ notebook = Notebook()
 flashcard = Flashcard()
 
 # Setting relative paths
-TEMP = '/tmp/acmm'
-HOME = os.getenv('HOME')
-LOCAL = f"{HOME}/.local"
+HOME = drawer.get_home()
+TEMP = f"{drawer.get_temp()}/accm"
+
 # Content dirs
-AC_DIR = f"{LOCAL}/share/Steam/steamapps/common/assettocorsa"
-# Config files
+assettocorsa = "steamapps/common/assettocorsa"
+content_dirs = [f"{HOME}/.local/share/Steam/{assettocorsa}",
+f"{HOME}/.var/app/com.valvesoftware.Steam/data/Steam/{assettocorsa}",
+f"C:/Program Files (x86)/Steam/{assettocorsa}"]
+
+# Configuration paths
 CONFIG_DIR = f"{HOME}/.config/acmm"
 CONFIG_FILE = f"{CONFIG_DIR}/config.toml"
-# Checking if config files exist
-drawer = Drawer()
-if not drawer.is_folder(CONFIG_DIR):
-  drawer.make_folder(CONFIG_DIR)
-if not drawer.is_file(CONFIG_FILE):
-  drawer.make_file(CONFIG_FILE)
+
 # Parsing config
-notebook = Notebook()
+notebook.check_config(CONFIG_FILE)
 config = notebook.read_toml(CONFIG_FILE)
-# Assigning vars from config
+# Parsing config filters
 def get_filter(i: str): return config.get('filters').get(i)
 kunos_cars      = get_filter('kunos_cars')
 kunos_tracks    = get_filter('kunos_tracks')
 kunos_apps      = get_filter('kunos_apps')
 kunos_ppfilters = get_filter('kunos_ppfilters')
+# Parsing AC_DIR
+AC_DIR = config.get('paths').get("AC_DIR")
+# Checking AC_DIR
+if AC_DIR == None:
+  for directory in content_dirs:
+    if drawer.is_folder(directory):
+      AC_DIR = directory
+if AC_DIR == None:
+  print(f"Assetto Corsa not found.\nIf Assetto Corsa is not installed in the default location, \
+you might need to specify the path to '/steamapps/common/assettocorsa' \
+in '{CONFIG_FILE}'.")
+  sys.exit(-1)
+if drawer.is_folder(AC_DIR) is False:
+  print(f"Path to Assetto Corsa's folder specified in '{CONFIG_FILE}' does not exist.")
+  sys.exit(-1)
+if AC_DIR.endswith(assettocorsa) is False:
+  print(f"Path to Assetto Corsa in '{CONFIG_FILE}' is incorrect. It should end with '/{assettocorsa}'.")
+  sys.exit(-1)
 
 class ModManager:
   def __init__(self, options):
@@ -70,13 +85,16 @@ class ModManager:
         continue
       title = self.mod_categories.get(category).get('title')
       filter_list = self.mod_categories.get(category).get('filter_list')
-      mod_list = drawer.get_folders(directory)
-      if self.options.get('list_all') is False:
-        mod_list = drawer.filter_by_basename(mod_list, filter_list)
+      mod_list = drawer.get_all(directory)
+      mod_basename = drawer.basename(mod_list)
+      filtered_basename = clipboard.filter(mod_basename, filter_list)
+      if self.options.get('list_all') is False and self.options.get('only_kunos') is False:
+        mod_list = clipboard.match_suffixes(mod_list, filtered_basename)
       if self.options.get('only_kunos') is True:
-        mod_list = drawer.filter_by_basename(filter_list, mod_list)
+        non_kunos = clipboard.match_suffixes(mod_list, filtered_basename)
+        mod_list = clipboard.filter(mod_list, non_kunos)
       mods[category] = {'title': title, 'mod_list': mod_list}
-    if mods == None:
+    if mods == {}:
       print("No mods found.")
       exit()
     return mods
@@ -127,16 +145,19 @@ class ModManager:
       print("Installation cancelled.")
       return
     # Installing mods
-    typewriter.print_status("Installing...")
     for category in mods:
       install_location = mods.get(category).get('install_location')
       mod_list = mods.get(category).get('mod_list')
+      copied = 0
+      to_copy = len(mod_list)
       for mod in mod_list:
+        typewriter.print_progress("Installing", copied, to_copy)
         basename = drawer.basename(mod)
         final_location = f"{install_location}/{basename}"
-        if drawer.is_folder(final_location):
-          drawer.trash_folder(final_location)
-        drawer.copy_folder(mod, final_location)
+        if drawer.exists(final_location):
+          drawer.trash(final_location)
+        drawer.copy(mod, final_location)
+        copied += 1
     clean_temp_dir()
     typewriter.print("Installation complete.")
   
@@ -146,14 +167,16 @@ class ModManager:
     for category in mods:
       title = mods.get(category).get('title')
       mod_list = mods.get(category).get('mod_list')
-      mod_list = clipboard.match_substring(search_term, mod_list)
+      mod_basename = drawer.basename(mod_list)
+      mods_found = clipboard.search(mod_basename, search_term)
+      mod_list = clipboard.match_suffixes(mod_list, mods_found)
       print_mod_category(title, mod_list)
       marked_mods += mod_list
     if marked_mods == []:
       print(f"No mods match '{search_term}'.")
       exit()
     if flashcard.yn_prompt('Remove the listed mods?'):
-      drawer.trash_folder(marked_mods)
+      drawer.trash(marked_mods)
       print('Deleted.')
     else:
       print('Deletion cancelled.')
@@ -181,14 +204,20 @@ class ModFinder():
     # Finding map.png file
     map_files = clipboard.match_suffix(files, "map.png")
     # Creating a mod_list out of dirs that have all required contents
-    kn5_parents = drawer.get_parent(kn5_folders)
-    map_parents = drawer.get_parent(map_files)
-    mod_list = clipboard.match_list(kn5_parents, map_parents)
+    kn5_parents = clipboard.deduplicate(drawer.get_parent(kn5_folders))
+    map_parents = clipboard.deduplicate(drawer.get_parent(map_files))
+    mod_list = clipboard.get_duplicates(kn5_parents, map_parents)
+    # In case it has multiple layouts
+    if mod_list == []:
+      map_parents = clipboard.deduplicate(drawer.get_parent(map_parents))
+      mod_list = clipboard.get_duplicates(kn5_parents, map_parents)
     return mod_list
     
   def find_python_apps(self, folder:str):
     mod_list = []
-    python_files = drawer.search_for_filetype("py", folder)
+    files = drawer.get_files_recursive(folder)
+    folders = drawer.get_folders_recursive(folder)
+    python_files = clipboard.match_suffix(files, ".py")
     for file in python_files:
       basename = drawer.basename(file).removesuffix('.py')
       parent = drawer.get_parent(file)
@@ -196,11 +225,28 @@ class ModFinder():
       if basename == parent_basename:
         mod_list.append(parent)
     return mod_list
+
   def find_ppfilters(self, folder:str):
-    pass
+    markers = ['[DOF]', '[COLOR]']
+    mod_list = []
+    files = drawer.get_files_recursive(folder)
+    folders = drawer.get_folders_recursive(folder)
+    ini_files = clipboard.match_suffix(files, ".ini")
+    for file in ini_files:
+      try:
+        data = open(file, 'r').read()
+      except:
+        continue
+      for marker in markers:
+        if marker in data:
+          mod_list.append(file)
+          continue
+    mod_list = clipboard.deduplicate(mod_list)
+    return mod_list
 
 def print_mod_category(title: str, mod_list: list):
   mod_list = drawer.basename(mod_list)
+  mod_list = clipboard.replace(mod_list, ".ini", "")
   entries = len(mod_list)
   # Quitting if there's nothing to print
   if entries == 0:
