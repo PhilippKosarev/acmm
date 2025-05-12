@@ -1,9 +1,15 @@
 #! /usr/bin/python
 
 # Imports
-import sys
-from libjam import Captain
+import sys, threading
+from libjam import Captain, Drawer, Typewriter, Clipboard, Flashcard
 from acmm_backend import ModManager
+
+# Jam classes
+typewriter = Typewriter()
+drawer = Drawer()
+clipboard = Clipboard()
+flashcard = Flashcard()
 
 # Inputs/Commands/Options configuration
 app = "acmm"
@@ -16,7 +22,7 @@ commands = {
 'install':  {'function': 'install', 'requires_args': True,
 'description': 'Installs the specified mod'},
 
-'remove':   {'function': 'remove_mods', 'requires_args': True,
+'remove':   {'function': 'remove', 'requires_args': True,
 'description': 'Removes specified mods'},
 }
 options = {
@@ -40,6 +46,7 @@ options = {
 }
 filter_options = ['list_cars', 'list_tracks', 'list_ppfilters', 'list_apps']
 
+
 # Processing user input
 arguments = sys.argv; arguments.remove(arguments[0])
 captain = Captain(app, description, commands, options)
@@ -47,7 +54,7 @@ captain = Captain(app, description, commands, options)
 captain.interpret(arguments)
 options = captain.get_option_values()
 
-# Enabling all filters if none active
+# Enabling all filters if none are active
 disabled_filters = 0
 for filter_option in filter_options:
   if options.get(filter_option) is False:
@@ -56,9 +63,81 @@ if disabled_filters == len(filter_options):
   for filter_option in filter_options:
     options[filter_option] = True
 
-# Sending it off to ModManager
 mod_manager = ModManager(options)
-function = f"mod_manager.{captain.get_function()}"
-exec(function)
 
-# class Terminal:
+# The command line interface functions
+class CLI:
+  # Interface to list installed mods
+  def list(self):
+    mods = mod_manager.get_mods()
+    self.print_mod_categories(mods)
+
+  # Interface to install mods
+  def install(self, path: str):
+    # Checking file
+    if drawer.exists(path) is False:
+      print(f"File '{path}' does not exist.")
+      sys.exit(-1)
+    # Pre processing (extracting archive, copying files)
+    typewriter.print_status("Processing...")
+    def print_extract_progress(copied: int, to_copy: int):
+      typewriter.print_progress("Installing", copied, to_copy)
+    unpacked =  mod_manager.extract_mod(path)
+    if unpacked is None:
+      typewriter.print("Cannot process mod contents.")
+      sys.exit(-1)
+    # Searching for mods
+    typewriter.print_status("Searching for mods...")
+    mods = mod_manager.find_mods(unpacked)
+    if mods == {}:
+      typewriter.print("No mods found.")
+      sys.exit(-1)
+    # Getting user input
+    typewriter.print(typewriter.bolden("Mods found:"))
+    self.print_mod_categories(mods)
+    if flashcard.yn_prompt("Install listed mods?") is False:
+      print("Installation cancelled.")
+      sys.exit(0)
+    # Installing mods
+    def print_install_progress(copied: int, to_copy: int):
+      typewriter.print_progress("Installing", copied, to_copy)
+    mod_manager.install_mods(mods, progress_function=print_install_progress)
+    typewriter.print("Installation complete.")
+
+  # Interface to remove mods
+  def remove(self, search_term: str):
+    mods = mod_manager.search_mods(search_term)
+    if mods == {}:
+      print(f"No mods found matching '{search_term}'.")
+      sys.exit(0)
+    self.print_mod_categories(mods)
+    if flashcard.yn_prompt('Remove the listed mods?'):
+      mod_manager.remove_mods(mods)
+      print('Deleted.')
+    else:
+      print('Deletion cancelled.')
+
+  # Helper functions
+  def print_mod_categories(self, mods):
+    for category in mods:
+      title = mods.get(category).get('title')
+      mod_list = mods.get(category).get('mod_list')
+      self.print_mod_category(title, mod_list)
+
+  def print_mod_category(self, title: str, mod_list: list):
+    size = round((drawer.get_file_size(mod_list) / 1_000_000_000), 1)
+    mod_list = drawer.basename(mod_list)
+    mod_list = clipboard.replace(mod_list, ".ini", "")
+    entries = len(mod_list)
+    # Quitting if there's nothing to print
+    if entries == 0:
+      return
+    # Printing
+    print(f"{typewriter.bolden(title)}: ({entries} entries at {size}GB)")
+    mods_columns = typewriter.list_to_columns(mod_list, None, 4)
+    print(f"{mods_columns}")
+
+# Executing input
+cli = CLI()
+function = f"cli.{captain.get_function()}"
+exec(function)

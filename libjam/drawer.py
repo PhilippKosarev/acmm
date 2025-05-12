@@ -133,7 +133,8 @@ class Drawer:
   # Creates a new folder
   def make_folder(self, path):
     path = realpath(path)
-    return outpath(os.makedirs(path))
+    path = os.mkdir(path)
+    return outpath(path)
 
   # Creates a new file
   def make_file(self, path):
@@ -158,10 +159,16 @@ class Drawer:
   def trash(self, path: str or list):
     path = realpath(path)
     if type(path) == str:
-      send2trash.send2trash(path)
+      try:
+        send2trash.send2trash(path)
+      except FileNotFoundError:
+        print(f"File '{path}' wasn't found, skipping sending it to trash.")
     elif type(path) == list:
       for item in path:
-        send2trash.send2trash(item)
+        try:
+          send2trash.send2trash(item)
+        except FileNotFoundError:
+          print(f"File '{path}' wasn't found, skipping sending it to trash.")
     else:
       return None
     return outpath(path)
@@ -187,9 +194,12 @@ class Drawer:
         shutil.rmtree(path)
       else:
         return None
-    except:
+    except KeyboardInterrupt:
       typewriter.print("Folder deletion cancelled.")
       shutil.rmtree(path)
+      sys.exit(-1)
+    except PermissionError:
+      typewriter.print(f"Failed to delete folder '{path}', due to insufficient permissions.")
       sys.exit(1)
     return outpath(path)
 
@@ -331,3 +341,14 @@ class Drawer:
   def get_temp(self):
     temp = str(tempfile.gettempdir())
     return outpath(temp)
+
+  def get_file_size(self, path: list):
+    size = 0
+    for file in path:
+      if self.is_file(file):
+        size += os.path.getsize(file)
+      elif self.is_folder(file):
+        subfiles = self.get_files_recursive(file)
+        for subfile in subfiles:
+          size += os.path.getsize(subfile)
+    return size

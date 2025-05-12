@@ -1,9 +1,8 @@
 # Imports
 import sys
-from libjam import Typewriter, Drawer, Clipboard, Notebook, Flashcard
+from libjam import Drawer, Clipboard, Notebook, Flashcard
 
 # Jam classes
-typewriter = Typewriter()
 drawer = Drawer()
 clipboard = Clipboard()
 notebook = Notebook()
@@ -51,7 +50,9 @@ if AC_DIR.endswith(assettocorsa) is False:
   print(f"Path to Assetto Corsa in '{CONFIG_FILE}' is incorrect. It should end with '/{assettocorsa}'.")
   sys.exit(-1)
 
+# Manages mods
 class ModManager:
+
   def __init__(self, options):
     # Mod categories
     self.options = options
@@ -72,8 +73,9 @@ class ModManager:
     'filter_list': kunos_ppfilters, 'enabled': options.get('list_ppfilters'),
     'find_function': 'find_ppfilters'},
     }
+
   # Creates directory lists for each mod_category
-  def get_mods(self, content_dir):
+  def get_mods(self):
     # Adding mod categories to dict
     mods = {}
     for category in self.mod_categories:
@@ -94,15 +96,7 @@ class ModManager:
         non_kunos = clipboard.match_suffixes(mod_list, filtered_basename)
         mod_list = clipboard.filter(mod_list, non_kunos)
       mods[category] = {'title': title, 'mod_list': mod_list}
-    if mods == {}:
-      print("No mods found.")
-      exit()
     return mods
-  
-  # Printing mods
-  def list(self):
-    mods = self.get_mods(AC_DIR)
-    print_mod_categories(mods)
   
   # Finding mods in given folder
   def find_mods(self, folder: str):
@@ -122,66 +116,71 @@ class ModManager:
         mods[category] = {'title': title, 'mod_list': mod_list, 'install_location': install_location}
     return mods
 
-  def install(self, path: str):
-    # Checking if file exists
-    if drawer.is_file(path) is False and drawer.is_folder(path) is False:
-      print(f"File '{path}' does not exist.")
-      exit()
-    # Checking temp dir
-    clean_temp_dir()
-    # Extracting archive if needed
-    if drawer.is_archive(path):
-      typewriter.print_status("Extracting archive...")
+  def clean_temp_dir(self):
+    if drawer.is_folder(TEMP):
+      drawer.delete_folder(TEMP)
+    drawer.make_folder(TEMP)
+
+  def extract_mod(self, path: str, progress_function=None):
+    if drawer.exists(path) is False:
+      return None
+    self.clean_temp_dir()
+    if drawer.is_folder(path):
+      basename = drawer.basename(path)
+      path = drawer.copy(path, f"{TEMP}/{basename}")
+    elif drawer.is_archive(path):
       path = drawer.extract_archive(path, TEMP)
-    # Searching for mods
-    typewriter.print_status("Searching for mods...")
-    mods = self.find_mods(path)
-    if mods == {}:
-      typewriter.print("No mods found.")
-      return
-    typewriter.print(typewriter.bolden("Mods found:"))
-    print_mod_categories(mods)
-    if flashcard.yn_prompt("Install listed mods?") is False:
-      print("Installation cancelled.")
-      return
-    # Installing mods
+    else:
+      return False
+    return path
+
+  # Installs given mods
+  def install_mods(self, mods: dict, progress_function=None):
     for category in mods:
       install_location = mods.get(category).get('install_location')
       mod_list = mods.get(category).get('mod_list')
       copied = 0
       to_copy = len(mod_list)
       for mod in mod_list:
-        typewriter.print_progress("Installing", copied, to_copy)
         basename = drawer.basename(mod)
         final_location = f"{install_location}/{basename}"
         if drawer.exists(final_location):
           drawer.trash(final_location)
         drawer.copy(mod, final_location)
         copied += 1
-    clean_temp_dir()
-    typewriter.print("Installation complete.")
-  
-  def remove_mods(self, search_term: str):
-    mods = self.get_mods(AC_DIR)
-    marked_mods = []
+        if progress_function is not None:
+          exec(f"progress_function({copied}, {to_copy})")
+    self.clean_temp_dir()
+
+  def search_mods(self, search_term: str):
+    # Getting mods dict
+    mods = self.get_mods()
+    marked_mods = {}
+    # Filtering out non matching mods
     for category in mods:
+      if mods[category].get('enabled') is False:
+        continue
       title = mods.get(category).get('title')
       mod_list = mods.get(category).get('mod_list')
       mod_basename = drawer.basename(mod_list)
       mods_found = clipboard.search(mod_basename, search_term)
-      mod_list = clipboard.match_suffixes(mod_list, mods_found)
-      print_mod_category(title, mod_list)
-      marked_mods += mod_list
-    if marked_mods == []:
-      print(f"No mods match '{search_term}'.")
-      exit()
-    if flashcard.yn_prompt('Remove the listed mods?'):
-      drawer.trash(marked_mods)
-      print('Deleted.')
-    else:
-      print('Deletion cancelled.')
+      mods_found = clipboard.match_suffixes(mod_list, mods_found)
+      if mods_found == []:
+        continue
+      marked_mods[category] = {
+      'title': title,
+      'mod_list': mods_found
+      }
+    # Returning matching mods
+    return marked_mods
 
+  def remove_mods(self, mods: dict):
+    for category in mods:
+      mod_list = mods.get(category).get('mod_list')
+      for mod in mod_list:
+        drawer.trash(mod)
 
+# Finds mods in a given dir
 class ModFinder():
   def find_cars(self, folder:str):
     mod_list = drawer.search_for_files("collider.kn5", folder)
@@ -243,27 +242,3 @@ class ModFinder():
           continue
     mod_list = clipboard.deduplicate(mod_list)
     return mod_list
-
-def print_mod_category(title: str, mod_list: list):
-  mod_list = drawer.basename(mod_list)
-  mod_list = clipboard.replace(mod_list, ".ini", "")
-  entries = len(mod_list)
-  # Quitting if there's nothing to print
-  if entries == 0:
-    return
-  # Printing
-  print(f"{typewriter.bolden(title)}: ({entries})")
-  mods_columns = typewriter.list_to_columns(mod_list, None, 4)
-  print(f"{mods_columns}")
-
-def print_mod_categories(mods):
-  for category in mods:
-    title = mods.get(category).get('title')
-    mod_list = mods.get(category).get('mod_list')
-    print_mod_category(title, mod_list)
-
-def clean_temp_dir():
-    typewriter.print_status("Cleaning temporary directory...")
-    if drawer.is_folder(TEMP):
-      drawer.delete_folder(TEMP)
-    drawer.make_folder(TEMP)
