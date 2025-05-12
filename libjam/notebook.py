@@ -33,9 +33,14 @@ class Notebook:
     data = open(config_file, 'r').read()
     try:
       data = tomllib.loads(data)
+      for category in data:
+        for item in data.get(category):
+          path = data.get(category).get(item)
+          if type(path) == str:
+            data[category][item] = path.replace(os.sep, '/')
       return data
     except:
       print(f"Encountered error reading '{config_file}'")
       print(f"Contents of '{config_file}':")
       print(data)
-      os.exit(-1)
+      return None
