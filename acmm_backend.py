@@ -48,6 +48,7 @@ if drawer.is_folder(AC_DIR) is False:
   sys.exit(-1)
 if AC_DIR.endswith(assettocorsa) is False:
   print(f"Path to Assetto Corsa in '{CONFIG_FILE}' is incorrect. It should end with '/{assettocorsa}'.")
+  print(f"Currently specified AC directory:\n{AC_DIR}")
   sys.exit(-1)
 
 # Manages mods

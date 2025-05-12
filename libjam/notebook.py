@@ -30,13 +30,12 @@ class Notebook:
   def read_toml(self, config_file: str):
     os.path.normpath(config_file)
     # Parsing config
+    data = open(config_file, 'r').read()
     try:
-      data = open(config_file, 'r').read()
       data = tomllib.loads(data)
       return data
     except:
-      data = open(config_file, 'r').read()
       print(f"Encountered error reading '{config_file}'")
       print(f"Contents of '{config_file}':")
       print(data)
-      exit()
+      os.exit(-1)
