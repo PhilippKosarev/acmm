@@ -1,5 +1,6 @@
 # Imports
-import os, sys, shutil, send2trash, zipfile, patoolib, platform, tempfile, pathlib, threading
+import os, sys, shutil, send2trash, platform, tempfile, pathlib
+import zipfile, patoolib, rarfile
 from .typewriter import Typewriter
 from .clipboard import Clipboard
 typewriter = Typewriter()
@@ -24,26 +25,6 @@ def outpath(path: str or list):
     for item in path:
       result_list.append(item.replace(os.sep, '/'))
     return result_list
-
-# Extracters
-def extract_zip(archive: str, extract_location: str):
-  with zipfile.ZipFile(archive, 'r') as file:
-    file.extractall(extract_location)
-  return extract_location
-def extract_rar(archive: str, extract_location: str):
-  try:
-    patoolib.extract_archive(archive, outdir=extract_location, verbosity=-1)
-    return extract_location
-  except patoolib.util.PatoolError:
-    print("Please install the 'unrar' package to process RAR archives.")
-    return None
-def extract_7z(archive: str, extract_location: str):
-  try:
-    patoolib.extract_archive(archive, outdir=extract_location, verbosity=-1)
-    return extract_location
-  except patoolib.util.PatoolError:
-    print("Please install the 'p7zip' package to process 7zip archives.")
-    return None
 
 
 # Deals with files
@@ -209,6 +190,7 @@ class Drawer:
     if type(path) == str:
       basename = self.basename(path)
       parent = path.removesuffix(basename)
+      parent = parent.removesuffix(os.sep)
       return outpath(parent)
     elif type(path) == list:
       result_list = []
@@ -311,22 +293,35 @@ class Drawer:
       return False
 
   # Extracts a given archive
-  def extract_archive(self, archive: str, extract_location: str):
+  def extract_archive(self, archive: str, extract_location: str, progress_function=None):
     archive = realpath(archive)
     extract_location = realpath(extract_location)
     archive_type = self.get_filetype(archive)
     archive_basename = self.basename(archive).removesuffix(f".{archive_type}")
     extract_location = joinpath(extract_location, archive_basename)
     try:
-      if archive_type == 'zip':
-        extract_zip(archive, extract_location)
-      elif archive_type == 'rar':
-        extract_rar(archive, extract_location)
+      if archive_type == 'zip': archive_function = zipfile.ZipFile
+      elif archive_type == 'rar': archive_function = rarfile.RarFile
       elif archive_type == '7z':
-        extract_7z(archive, extract_location)
+        try:
+          patoolib.extract_archive(archive, outdir=extract_location, verbosity=-1)
+          return extract_location
+        except PatoolError:
+          print("Please install the 'p7zip' package to process 7zip archives.")
+          return None
       else:
         return None
-    except:
+      if archive_type == 'zip' or archive_type == 'rar':
+        archive_obj = archive_function(archive)
+        archived_files = archive_obj.namelist()
+        to_extract = len(archived_files)
+        extracted = 0
+        for archived_file in archived_files:
+          archive_obj.extract(archived_file, path=extract_location)
+          extracted += 1
+          if progress_function is not None:
+            progress_function(extracted, to_extract)
+    except KeyboardInterrupt:
       typewriter.print("Archive extraction cancelled.")
       self.delete_folder(extract_location)
       exit()
@@ -342,13 +337,16 @@ class Drawer:
     temp = str(tempfile.gettempdir())
     return outpath(temp)
 
-  def get_file_size(self, path: list):
-    size = 0
-    for file in path:
-      if self.is_file(file):
-        size += os.path.getsize(file)
-      elif self.is_folder(file):
-        subfiles = self.get_files_recursive(file)
+  def get_file_size(self, path: str):
+    try:
+      size = 0
+      if self.is_file(path):
+        size += os.path.getsize(path)
+      elif self.is_folder(path):
+        subfiles = self.get_files_recursive(path)
         for subfile in subfiles:
           size += os.path.getsize(subfile)
-    return size
+      return size
+    except KeyboardInterrupt:
+      typewriter.print('Program aborted while gathering size of files.')
+      sys.exit(1)

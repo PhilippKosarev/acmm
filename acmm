@@ -79,10 +79,16 @@ class CLI:
       print(f"File '{path}' does not exist.")
       sys.exit(-1)
     # Pre processing (extracting archive, copying files)
+    typewriter.print_status("Gathering file size...")
+    size = round((drawer.get_file_size(path) / 1_000_000_000), 1)
+    if size > 10:
+      print(f"Specified mod(s) weigh {size}GB, installing it might take a while. ")
+      if flashcard.yn_prompt("Proceed anyway?") is False:
+        sys.exit(0)
     typewriter.print_status("Processing...")
-    def print_extract_progress(copied: int, to_copy: int):
-      typewriter.print_progress("Installing", copied, to_copy)
-    unpacked =  mod_manager.extract_mod(path)
+    def print_extract_progress(done: int, todo: int):
+      typewriter.print_progress("Extracting", done, todo)
+    unpacked = mod_manager.extract_mod(path, progress_function=print_extract_progress)
     if unpacked is None:
       typewriter.print("Cannot process mod contents.")
       sys.exit(-1)
@@ -125,7 +131,10 @@ class CLI:
       self.print_mod_category(title, mod_list)
 
   def print_mod_category(self, title: str, mod_list: list):
-    size = round((drawer.get_file_size(mod_list) / 1_000_000_000), 1)
+    size = 0
+    for mod in mod_list:
+      size += drawer.get_file_size(mod)
+    size = round((size / 1_000_000_000), 1)
     mod_list = drawer.basename(mod_list)
     mod_list = clipboard.replace(mod_list, ".ini", "")
     entries = len(mod_list)
@@ -133,11 +142,10 @@ class CLI:
     if entries == 0:
       return
     # Printing
-    print(f"{typewriter.bolden(title)}: ({entries} entries at {size}GB)")
-    mods_columns = typewriter.list_to_columns(mod_list, None, 4)
+    print(f"{typewriter.bolden(title)}: ( {entries} | {size}GB )")
+    mods_columns = typewriter.list_to_columns(mod_list, None, 2)
     print(f"{mods_columns}")
 
 # Executing input
-cli = CLI()
-function = f"cli.{captain.get_function()}"
-exec(function)
+function = captain.get_function()
+exec(f"CLI().{function}")

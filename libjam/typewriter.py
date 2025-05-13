@@ -34,15 +34,18 @@ class Typewriter:
 
   # Prints on the same line
   def print_progress(self, status: str, current: int, total: int):
-    width = 20
-    progress = (current / total)
-    percent = int(round((progress * 100), 0))
+    # total_width = len(str(total))
+    # output_width = len(f' 000% [] {status}: {total_width}/{total_width}')
+    # width = shutil.get_terminal_size()[0] - output_width - 5
+    width = 25
+    progress_float= (current / total)
+    percent = int(round((progress_float* 100), 0))
     percent_string = str(percent)
     if percent < 100:
       percent_string = ' ' + percent_string
     if percent < 10:
       percent_string = ' ' + percent_string
-    progress_width = int(progress * width)
+    progress_width = int(progress_float * width)
     progress_bar = '=' * progress_width + ' ' * (width - progress_width)
     self.print_status(f"{percent_string}% [{progress_bar}] {status}: {current}/{total}")
 

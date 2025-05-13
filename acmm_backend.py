@@ -130,7 +130,7 @@ class ModManager:
       basename = drawer.basename(path)
       path = drawer.copy(path, f"{TEMP}/{basename}")
     elif drawer.is_archive(path):
-      path = drawer.extract_archive(path, TEMP)
+      path = drawer.extract_archive(path, TEMP, progress_function)
     else:
       return False
     return path
@@ -201,16 +201,18 @@ class ModFinder():
       parent_basename = drawer.basename(parent)
       if basename == parent_basename:
         kn5_folders.append(parent)
+      else:
+        kn5_folders.append(parent)
+    kn5_folders = clipboard.deduplicate(kn5_folders)
     # Finding map.png file
     map_files = clipboard.match_suffix(files, "map.png")
     # Creating a mod_list out of dirs that have all required contents
-    kn5_parents = clipboard.deduplicate(drawer.get_parent(kn5_folders))
     map_parents = clipboard.deduplicate(drawer.get_parent(map_files))
-    mod_list = clipboard.get_duplicates(kn5_parents, map_parents)
+    mod_list = clipboard.get_duplicates(kn5_folders, map_parents)
     # In case it has multiple layouts
     if mod_list == []:
       map_parents = clipboard.deduplicate(drawer.get_parent(map_parents))
-      mod_list = clipboard.get_duplicates(kn5_parents, map_parents)
+      mod_list = clipboard.get_duplicates(kn5_folders, map_parents)
     return mod_list
     
   def find_python_apps(self, folder:str):
