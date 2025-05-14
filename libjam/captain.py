@@ -85,13 +85,14 @@ class Captain:
           argument = argument.removeprefix("-")
           arguments = list(argument)
           for argument in arguments:
+            command_found = False
             for option in self.options:
               strings = self.options.get(option).get('short')
               if clipboard.is_string_in_list(strings, argument):
                 option_dict = self.options.get(option).get('option')
                 option_value = self.option_values[option_dict] = True
-                self.command_found = True
-          if self.command_found is False:
+                command_found = True
+          if command_found is False:
             print(f"Option '{argument}' unrecognized. Try {self.app} help")
             exit()
       # Commands

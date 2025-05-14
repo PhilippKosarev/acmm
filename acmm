@@ -79,13 +79,13 @@ class CLI:
       print(f"File '{path}' does not exist.")
       sys.exit(-1)
     # Pre processing (extracting archive, copying files)
-    typewriter.print_status("Gathering file size...")
+    typewriter.print_status("Computing file size...")
     size = round((drawer.get_file_size(path) / 1_000_000_000), 1)
     if size > 10:
       print(f"Specified mod(s) weigh {size}GB, installing it might take a while. ")
       if flashcard.yn_prompt("Proceed anyway?") is False:
         sys.exit(0)
-    typewriter.print_status("Processing...")
+    typewriter.print_status("Extracting...")
     def print_extract_progress(done: int, todo: int):
       typewriter.print_progress("Extracting", done, todo)
     unpacked = mod_manager.extract_mod(path, progress_function=print_extract_progress)
