@@ -126,13 +126,13 @@ class Drawer:
 
 
   # Copies given file(s)/folder(s)
-  def copy(self, source: str, destination: str):
+  def copy(self, source: str, destination: str, overwrite=False):
     source = realpath(source)
     destination = realpath(destination)
     if self.is_file(source):
       shutil.copy(source, destination)
     elif self.is_folder(source):
-      shutil.copytree(source, destination)
+      shutil.copytree(source, destination, dirs_exist_ok=overwrite)
     return outpath(destination)
 
 

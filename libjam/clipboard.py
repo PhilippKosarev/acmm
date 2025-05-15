@@ -47,9 +47,14 @@ class Clipboard:
   def match_prefix(self, input_list: list, input_prefix: str):
     result_list = []
     for item in input_list:
-      item_prefix = item.removeprefix(input_prefix)
-      if item != item_prefix:
+      if item.startswith(input_prefix):
         result_list.append(item)
+    return result_list
+
+  def remove_prefix(self, input_list: list, input_prefix: str):
+    result_list = []
+    for item in input_list:
+      result_list.append(item.removeprefix(input_prefix))
     return result_list
 
   # Returns a list of strings which ends with input_suffix

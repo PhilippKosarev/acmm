@@ -102,3 +102,14 @@ class ModFinder():
       if extensions_folders[0] != '':
         return drawer.get_folders(extensions_folders[0])
     return []
+
+  def find_gui(self, folder:str):
+    files = drawer.get_files_recursive(folder)
+    png_files = clipboard.match_suffix(files, ".png")
+    png_folders = clipboard.deduplicate(drawer.get_parent(png_files))
+    guis = clipboard.deduplicate(drawer.get_parent(png_folders))
+    gui_folders = clipboard.match_suffix(guis, '/gui')
+    if len(gui_folders) == 1:
+      if gui_folders[0] != '':
+        return drawer.get_all(gui_folders[0])
+    return []

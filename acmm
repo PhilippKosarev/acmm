@@ -140,7 +140,6 @@ options = {
 }
 filter_options = ['list_cars', 'list_tracks', 'list_ppfilters', 'list_python', 'list_lua', 'list_weather']
 
-
 # Processing user input
 arguments = sys.argv; arguments.remove(arguments[0])
 captain = Captain(app, description, commands, options)

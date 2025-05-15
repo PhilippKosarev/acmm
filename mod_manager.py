@@ -90,8 +90,11 @@ class ModManager:
     }
 
     self.meta_categories = {
-    "extensions": {'title': "Extensions", 'directory': f'{AC_DIR}/extension',
+    'extensions': {'title': "Extensions", 'directory': f"{AC_DIR}/extension",
     'find_function': mod_finder.find_extensions, 'keep_old': True},
+
+    'gui': {'title': "GUI", 'directory': f"{AC_DIR}/content/gui",
+    'find_function': mod_finder.find_gui, 'keep_old': True},
     }
 
   # Creates directory lists for each mod_category
@@ -146,12 +149,16 @@ class ModManager:
       title = self.meta_categories.get(category).get('title')
       install_location = self.meta_categories.get(category).get('directory')
       find_function = self.meta_categories.get(category).get('find_function')
+      keep_old = self.meta_categories.get(category).get('keep_old')
       mod_finder = ModFinder()
       mod_list = find_function(folder)
       if mod_list == []:
         continue
       if mod_list is not None:
-        meta_mods[category] = {'title': title, 'mod_list': mod_list, 'install_location': install_location}
+        meta_mods[category] = {
+          'title': title, 'mod_list': mod_list,
+          'install_location': install_location, 'keep_old': keep_old
+        }
     return meta_mods
 
   def clean_temp_dir(self):
@@ -185,7 +192,9 @@ class ModManager:
         final_location = f"{install_location}/{basename}"
         if keep_old is not True and drawer.exists(final_location):
           drawer.trash(final_location)
-        drawer.copy(mod, final_location)
+          drawer.copy(mod, final_location)
+        else:
+          drawer.copy(mod, final_location, overwrite=True)
         copied += 1
         if progress_function is not None:
           progress_function(copied, to_copy)
