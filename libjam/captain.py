@@ -119,15 +119,14 @@ class Captain:
             print(f"Command '{argument}' unrecognized. Try {self.app} help")
             sys.exit(-1)
         else:
-          if self.required_args > 0 or self.arbitrary_args:
-            if len(self.command_args) <= self.required_args:
-              self.command_args.append(argument)
-            else:
-              print(f"Command '{self.command}' requires {self.required_args} argument(s).")
-              sys.exit(-1)
-          else:
+          if self.required_args == 0 and self.arbitrary_args is False:
             print(f"Command '{self.command}' does not take arguments.")
-            exit()
+            sys.exit(-1)
+          elif self.required_args >= len(self.command_args) and self.arbitrary_args is False:
+            print(f"Command '{self.command}' requires only {self.required_args} argument(s).")
+            sys.exit(-1)
+          else:
+            self.command_args.append(argument)
     if self.arbitrary_args is False and self.required_args > len(self.command_args):
       print(f"Command '{self.command}' requires {self.required_args} arguments.")
       sys.exit(-1)
