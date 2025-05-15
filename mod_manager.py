@@ -176,7 +176,7 @@ class ModManager:
     elif drawer.is_archive(path):
       path = drawer.extract_archive(path, TEMP, progress_function)
     else:
-      return False
+      return None
     return path
 
   # Installs given mods
