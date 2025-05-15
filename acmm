@@ -14,7 +14,7 @@ flashcard = Flashcard()
 # The command line interface functions
 class CLI:
   # Interface to list installed mods
-  def list(self):
+  def list(self, *args):
     mods = mod_manager.get_mods()
     self.print_mod_categories(mods)
 
