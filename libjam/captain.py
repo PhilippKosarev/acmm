@@ -1,11 +1,11 @@
 # Imports
-import os, shutil, tomllib, send2trash, zipfile, patoolib
+import sys, re, inspect
 from .typewriter import Typewriter
 from .clipboard import Clipboard
 typewriter = Typewriter()
 clipboard = Clipboard()
 
-# Processes given input arguments
+# Processes command line arguments
 class Captain:
   def __init__(self, app, description, commands, options):
     # Class vars
@@ -58,7 +58,7 @@ class Captain:
     self.command = None
     self.function = None
     self.requires_args = False
-    self.command_args = ""
+    self.command_args = []
     # Creating option bools
     self.option_values = {}
     for option in self.options:
@@ -79,7 +79,7 @@ class Captain:
               self.arg_found = True
           if self.arg_found is False:
             print(f"Option '{argument}' unrecognized. Try {self.app} help")
-            exit()
+            sys.exit(-1)
         # Short options
         else:
           argument = argument.removeprefix("-")
@@ -94,37 +94,44 @@ class Captain:
                 command_found = True
           if command_found is False:
             print(f"Option '{argument}' unrecognized. Try {self.app} help")
-            exit()
+            sys.exit(-1)
       # Commands
       else:
         if self.command is None:
           for command in self.commands:
             if command == argument:
               self.command = command
-              self.requires_args = self.commands.get(command).get('requires_args')
-            elif argument == "help":
+              command_function = self.commands.get(command).get('function')
+              command_args = inspect.signature(command_function)
+              command_args = command_args.format().replace('(', '').replace(')', '').replace(' ', '')
+              command_args = command_args.split(',')
+              if command_args == ['']:
+                command_args = []
+              self.required_args = len(command_args)
+                # self.requires_args = True
+            elif argument == 'help':
               self.print_help()
-              exit()
+              sys.exit(0)
           if self.command is None:
             print(f"Command '{argument}' unrecognized. Try {self.app} help")
-            exit()
+            sys.exit(-1)
         else:
-          if self.requires_args is True:
-            if self.command_args == "":
-              self.command_args = argument
+          if self.required_args > 0:
+            if len(self.command_args) <= self.required_args:
+              self.command_args.append(argument)
             else:
-              print(f"Command '{self.command}' only takes one argument.")
-              exit()
+              print(f"Command '{self.command}' requires {self.required_args} argument(s).")
+              sys.exit(-1)
           else:
             print(f"Command '{self.command}' does not take arguments.")
             exit()
-    if self.requires_args is True and self.command_args == "":
-      print(f"Command '{self.command}' requires an argument.")
-      exit()
+    if self.required_args > len(self.command_args):
+      print(f"Command '{self.command}' requires {self.required_args} arguments.")
+      sys.exit(-1)
     # Checking if command is specified
     if self.command is None:
         print(f"No command specified. Try {self.app} help")
-        exit()
+        sys.exit(0)
 
 
   # Returns the `option_values` dict
@@ -135,8 +142,5 @@ class Captain:
   # Returns the `function` string
   def get_function(self):
     function = self.commands.get(self.command).get('function')
-    if self.command_args != "":
-      function = f"{function}('{self.command_args}')"
-    else:
-      function = f"{function}()"
+    function = function(*self.command_args)
     return function

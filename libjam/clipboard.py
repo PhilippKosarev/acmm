@@ -68,14 +68,14 @@ class Clipboard:
     return result_list
 
 
-  # Returns a list with lowercase strings
+  # Returns a list with lower-case strings
   def lower(self, input_list: list):
     result_list = []
     for item in input_list:
       result_list.append(item.lower())
     return result_list
 
-  # Returns a list with lowercase strings
+  # Returns a list with upper-case strings
   def upper(self, input_list: list):
     result_list = []
     for item in input_list:

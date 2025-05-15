@@ -1,20 +1,22 @@
 # Imports
 import shutil
 
-# Prints stuff in a fancy way
+# Responsible for formatting, modification and printing of strings
 class Typewriter:
   def __init__(self):
+    # Shorthand vars
     self.BOLD = '\033[1m'
     self.NORMAL = '\033[0m'
     self.CLEAR = '\x1b[2K'
     self.CURSOR_UP = '\033[1A'
 
-  # Returns bold text
+  # Gets a string, makes it bold, returns the string
   def bolden(self, text: str):
     text = f'{self.BOLD}{text}{self.NORMAL}'
     return text
 
   # Clears a given number of lines in the terminal
+  # if given 0 the current line will be erased
   def clear_lines(self, lines: int):
     if lines == 0:
       print("\r" + self.CLEAR, end='')
@@ -22,7 +24,8 @@ class Typewriter:
     for line in range(lines):
       print(self.CURSOR_UP + self.CLEAR, end='')
 
-  # Clears current line to print a new one (neede cuz print_status)
+  # Clears current line to print a new one.
+  # Usecase: after typewriter.print_status()
   def print(self, text: str):
     self.clear_lines(0)
     print(text)
