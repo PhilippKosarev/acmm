@@ -31,6 +31,7 @@ kunos_cars      = get_filter('kunos_cars')
 kunos_tracks    = get_filter('kunos_tracks')
 kunos_apps      = get_filter('kunos_apps')
 kunos_ppfilters = get_filter('kunos_ppfilters')
+kunos_weather   = get_filter('kunos_weather')
 # Parsing AC_DIR
 AC_DIR = config.get('paths').get("AC_DIR")
 # Checking AC_DIR
@@ -67,12 +68,20 @@ class ModManager:
     'find_function': 'find_tracks'},
 
     "python_apps": {'title':   "Python apps", 'directory': f'{AC_DIR}/apps/python',
-    'filter_list': kunos_apps,      'enabled': options.get('list_apps'),
+    'filter_list': kunos_apps,      'enabled': options.get('list_python'),
     'find_function': 'find_python_apps'},
+
+    "lua_apps": {'title':   "Lua apps", 'directory': f'{AC_DIR}/apps/lua',
+    'filter_list': [],            'enabled': options.get('list_lua'),
+    'find_function': 'find_lua_apps'},
 
     "ppfilters": {'title':    "PP Filters",   'directory': f'{AC_DIR}/system/cfg/ppfilters',
     'filter_list': kunos_ppfilters, 'enabled': options.get('list_ppfilters'),
     'find_function': 'find_ppfilters'},
+
+    "weather": {'title':    "Weather",   'directory': f'{AC_DIR}/content/weather',
+    'filter_list': kunos_weather, 'enabled': options.get('list_weather'),
+    'find_function': 'find_weather'},
     }
 
   # Creates directory lists for each mod_category
@@ -96,6 +105,9 @@ class ModManager:
       if self.options.get('only_kunos') is True:
         non_kunos = clipboard.match_suffixes(mod_list, filtered_basename)
         mod_list = clipboard.filter(mod_list, non_kunos)
+      # Removing `readme_weather.txt` from list
+      for item in clipboard.match_suffix(mod_list, 'readme_weather.txt'):
+        mod_list.remove(item)
       mods[category] = {'title': title, 'mod_list': mod_list}
     return mods
   
@@ -232,7 +244,6 @@ class ModFinder():
     markers = ['[DOF]', '[COLOR]']
     mod_list = []
     files = drawer.get_files_recursive(folder)
-    folders = drawer.get_folders_recursive(folder)
     ini_files = clipboard.match_suffix(files, ".ini")
     for file in ini_files:
       try:
@@ -243,5 +254,18 @@ class ModFinder():
         if marker in data:
           mod_list.append(file)
           continue
+    parents = clipboard.deduplicate(drawer.get_parent(mod_list))
+    if len(parents) == 1:
+      mod_list = drawer.get_all(parents[0])
     mod_list = clipboard.deduplicate(mod_list)
+    return mod_list
+
+  def find_weather(self, folder:str):
+    mod_list = []
+    files = drawer.get_files_recursive(folder)
+    weather_files = clipboard.match_suffix(files, "/weather.ini")
+    weather_folders = clipboard.deduplicate(drawer.get_parent(weather_files))
+    weather_parents = clipboard.deduplicate(drawer.get_parent(weather_folders))
+    if len(weather_parents) == 1:
+      mod_list = weather_folders
     return mod_list

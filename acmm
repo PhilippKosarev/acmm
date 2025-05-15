@@ -115,11 +115,17 @@ options = {
 'track':    {'long': ['track', 'tracks'],       'short': ['t'], 'option': 'list_tracks',
 'description': 'Only list|install|remove tracks'},
 
-'ppfilter': {'long': ['ppfilter', 'ppfilters'], 'short': ['p'], 'option': 'list_ppfilters',
+'ppfilter': {'long': ['ppfilter', 'ppfilters'], 'short': ['f'], 'option': 'list_ppfilters',
 'description': 'Only list|install|remove PP filters'},
 
-'app':      {'long': ['app', 'apps'],           'short': ['a'], 'option': 'list_apps',
-'description': 'Only list|install|remove apps'},
+'weather': {'long': ['weather'],                'short': ['w'], 'option': 'list_weather',
+'description': 'Only list|install|remove weather'},
+
+'python':  {'long': ['py', 'python'],           'short': ['p'], 'option': 'list_python',
+'description': 'Only list|install|remove python apps'},
+
+'lua':  {'long': ['lua'],                       'short': ['l'], 'option': 'list_lua',
+'description': 'Only list|install|remove lua apps'},
 
 'all':      {'long': ['all'],                   'short': ['A'], 'option': 'list_all',
 'description': 'Do not filter out Kunos assets'},
@@ -127,7 +133,7 @@ options = {
 'kunos':    {'long': ['kunos'],                 'short': ['k'], 'option': 'only_kunos',
 'description': 'Filter out non Kunos assets'},
 }
-filter_options = ['list_cars', 'list_tracks', 'list_ppfilters', 'list_apps']
+filter_options = ['list_cars', 'list_tracks', 'list_ppfilters', 'list_python', 'list_lua', 'list_weather']
 
 
 # Processing user input

@@ -11,3 +11,5 @@ kunos_tracks = ['drift', 'imola', 'ks_barcelona', 'ks_black_cat_county', 'ks_bra
 kunos_apps = ['Chat', 'gMeter', 'system']
 # Kunos PP filters
 kunos_ppfilters = ['b&w.ini', 'blue_steel.ini', 'custom config example.ini', 'default.ini', 'default_bright.ini', 'default_dark.ini', 'movie.ini', 'natural.ini', 'photographic.ini', 'sepia.ini', 'vintage.ini']
+# Kunos weather
+kunos_weather = ['1_heavy_fog', '2_light_fog', '3_clear', '4_mid_clear', '5_light_clouds', '6_mid_clouds', '7_heavy_clouds']

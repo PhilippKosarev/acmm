@@ -108,7 +108,6 @@ class Captain:
               if command_args == ['']:
                 command_args = []
               self.required_args = len(command_args)
-                # self.requires_args = True
             elif argument == 'help':
               self.print_help()
               sys.exit(0)
