@@ -125,7 +125,7 @@ class ModManager:
     return mods
 
   # Finding mods in given folder
-  def find_mods(self, folder: str):
+  def find_mods(self):
     mods = {}
     for category in self.mod_categories:
       enabled = self.mod_categories.get(category).get('enabled')
@@ -135,15 +135,17 @@ class ModManager:
       install_location = self.mod_categories.get(category).get('directory')
       find_function = self.mod_categories.get(category).get('find_function')
       mod_finder = ModFinder()
-      mod_list = find_function(folder)
+      folders = drawer.get_folders(TEMP)
+      mod_list = []
+      for folder in folders:
+        mod_list = mod_list + find_function(folder)
       if mod_list == []:
         continue
-      if mod_list is not None:
-        mods[category] = {'title': title, 'mod_list': mod_list, 'install_location': install_location}
+      mods[category] = {'title': title, 'mod_list': mod_list, 'install_location': install_location}
     return mods
 
   # Finding meta mods
-  def find_meta_mods(self, folder: str):
+  def find_meta_mods(self):
     meta_mods = {}
     for category in self.meta_categories:
       title = self.meta_categories.get(category).get('title')
@@ -151,7 +153,7 @@ class ModManager:
       find_function = self.meta_categories.get(category).get('find_function')
       keep_old = self.meta_categories.get(category).get('keep_old')
       mod_finder = ModFinder()
-      mod_list = find_function(folder)
+      mod_list = find_function(TEMP)
       if mod_list == []:
         continue
       if mod_list is not None:
@@ -169,15 +171,14 @@ class ModManager:
   def extract_mod(self, path: str, progress_function=None):
     if drawer.exists(path) is False:
       return None
-    self.clean_temp_dir()
     if drawer.is_folder(path):
       basename = drawer.basename(path)
       path = drawer.copy(path, f"{TEMP}/{basename}")
     elif drawer.is_archive(path):
       path = drawer.extract_archive(path, TEMP, progress_function)
+      return path
     else:
       return None
-    return path
 
   # Installs given mods
   def install_mods(self, mods: dict, progress_function=None):

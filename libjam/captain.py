@@ -57,6 +57,7 @@ class Captain:
     # Class vars
     self.command = None
     self.function = None
+    self.arbitrary_args = False
     self.requires_args = False
     self.command_args = []
     # Creating option bools
@@ -105,6 +106,9 @@ class Captain:
               command_args = inspect.signature(command_function)
               command_args = command_args.format().replace('(', '').replace(')', '').replace(' ', '')
               command_args = command_args.split(',')
+              if clipboard.is_string_in_list(command_args, '*args'):
+                command_args.remove('*args')
+                self.arbitrary_args = True
               if command_args == ['']:
                 command_args = []
               self.required_args = len(command_args)
@@ -124,7 +128,7 @@ class Captain:
           else:
             print(f"Command '{self.command}' does not take arguments.")
             exit()
-    if self.required_args > len(self.command_args):
+    if self.arbitrary_args is False and self.required_args > len(self.command_args):
       print(f"Command '{self.command}' requires {self.required_args} arguments.")
       sys.exit(-1)
     # Checking if command is specified

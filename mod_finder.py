@@ -6,13 +6,13 @@ clipboard = Clipboard()
 
 # Finds mods in a given directory
 class ModFinder():
-  def find_cars(self, folder:str):
+  def find_cars(self, folder: str):
     mod_list = drawer.search_for_files("collider.kn5", folder)
     mod_list = drawer.get_parent(mod_list)
     mod_list = clipboard.deduplicate(mod_list)
     return mod_list
 
-  def find_tracks(self, folder:str):
+  def find_tracks(self, folder: str):
     files = drawer.get_files_recursive(folder)
     folders = drawer.get_folders_recursive(folder)
     # Finding a kn5 files with the same name as parent dir
@@ -32,13 +32,14 @@ class ModFinder():
     # Creating a mod_list out of dirs that have all required contents
     map_parents = clipboard.deduplicate(drawer.get_parent(map_files))
     mod_list = clipboard.get_duplicates(kn5_folders, map_parents)
+    # print(mod_list)
     # In case it has multiple layouts
     if mod_list == []:
       map_parents = clipboard.deduplicate(drawer.get_parent(map_parents))
       mod_list = clipboard.get_duplicates(kn5_folders, map_parents)
     return mod_list
 
-  def find_python_apps(self, folder:str):
+  def find_python_apps(self, folder: str):
     mod_list = []
     files = drawer.get_files_recursive(folder)
     python_files = clipboard.match_suffix(files, ".py")
@@ -50,7 +51,7 @@ class ModFinder():
         mod_list.append(parent)
     return mod_list
 
-  def find_lua_apps(self, folder:str):
+  def find_lua_apps(self, folder: str):
     mod_list = []
     files = drawer.get_files_recursive(folder)
     python_files = clipboard.match_suffix(files, ".lua")
@@ -62,7 +63,7 @@ class ModFinder():
         mod_list.append(parent)
     return mod_list
 
-  def find_ppfilters(self, folder:str):
+  def find_ppfilters(self, folder: str):
     markers = ['[DOF]', '[COLOR]']
     files = drawer.get_files_recursive(folder)
     ini_files = clipboard.match_suffix(files, ".ini")
@@ -82,7 +83,7 @@ class ModFinder():
     mod_list = clipboard.deduplicate(mod_list)
     return mod_list
 
-  def find_weather(self, folder:str):
+  def find_weather(self, folder: str):
     files = drawer.get_files_recursive(folder)
     weather_files = clipboard.match_suffix(files, "/weather.ini")
     weather_folders = clipboard.deduplicate(drawer.get_parent(weather_files))
@@ -91,7 +92,7 @@ class ModFinder():
       return weather_folders
     return []
 
-  def find_extensions(self, folder:str):
+  def find_extensions(self, folder: str):
     files = drawer.get_files_recursive(folder)
     lua_files = clipboard.match_suffix(files, ".lua")
     lua_folders = clipboard.deduplicate(drawer.get_parent(lua_files))
@@ -103,7 +104,7 @@ class ModFinder():
         return drawer.get_folders(extensions_folders[0])
     return []
 
-  def find_gui(self, folder:str):
+  def find_gui(self, folder: str):
     files = drawer.get_files_recursive(folder)
     png_files = clipboard.match_suffix(files, ".png")
     png_folders = clipboard.deduplicate(drawer.get_parent(png_files))

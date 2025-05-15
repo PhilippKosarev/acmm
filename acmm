@@ -19,29 +19,41 @@ class CLI:
     self.print_mod_categories(mods)
 
   # Interface to install mods
-  def install(self, path: str):
-    # Checking file
-    if drawer.exists(path) is False:
-      print(f"File '{path}' does not exist.")
-      sys.exit(-1)
-    # Pre processing (extracting archive, copying files)
-    typewriter.print_status("Computing file size...")
-    size = round((drawer.get_file_size(path) / 1_000_000_000), 1)
-    if size > 10:
-      print(f"Specified mod(s) weigh {size}GB, installing it might take a while. ")
-      if flashcard.yn_prompt("Proceed anyway?") is False:
-        sys.exit(0)
-    typewriter.print_status("Extracting...")
-    def print_extract_progress(done: int, todo: int):
-      typewriter.print_progress("Extracting", done, todo)
-    unpacked = mod_manager.extract_mod(path, progress_function=print_extract_progress)
-    if unpacked is None:
-      typewriter.print("Cannot process mod contents.")
-      sys.exit(-1)
+  def install(self, path: str, *args):
+    # Getting arbitrary number of paths
+    paths = list(args)
+    paths.insert(0, path)
+    for path in paths:
+      # Checking file
+      if drawer.exists(path) is False:
+        print(f"File '{path}' does not exist.")
+        sys.exit(-1)
+
+    for path in paths:
+      # Pre processing (extracting archive, copying files)
+      typewriter.print_status("Computing file size...")
+      size = round((drawer.get_file_size(path) / 1_000_000_000), 1)
+      if size > 10:
+        print(f"Specified mod(s) weigh {size}GB, installing it might take a while. ")
+        if flashcard.yn_prompt("Proceed anyway?") is False:
+          sys.exit(0)
+
+    typewriter.print_status("Cleaning temp dir...")
+    mod_manager.clean_temp_dir()
+    for path in paths:
+      typewriter.print_status("Processing...")
+      basename = drawer.basename(path)
+      def print_extract_progress(done: int, todo: int):
+        typewriter.print_progress(f"Extracting '{basename}'", done, todo)
+      unpacked = mod_manager.extract_mod(path, progress_function=print_extract_progress)
+      if unpacked is None:
+        typewriter.print(f"Cannot process contents of {path}.")
+        sys.exit(-1)
+
     # Searching for mods
     typewriter.print_status("Searching for mods...")
-    mods = mod_manager.find_mods(unpacked)
-    meta_mods = mod_manager.find_meta_mods(unpacked)
+    mods = mod_manager.find_mods()
+    meta_mods = mod_manager.find_meta_mods()
     # Joining metamods
     if meta_mods != {}:
       mods = mods | meta_mods
