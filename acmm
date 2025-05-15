@@ -42,12 +42,12 @@ class CLI:
     typewriter.print_status("Searching for mods...")
     mods = mod_manager.find_mods(unpacked)
     meta_mods = mod_manager.find_meta_mods(unpacked)
-    if mods == {}:
-      typewriter.print("No mods found.")
-      sys.exit(-1)
     # Joining metamods
     if meta_mods != {}:
       mods = mods | meta_mods
+    if mods == {}:
+      typewriter.print("No mods found.")
+      sys.exit(-1)
     # Printing found mods
     typewriter.print(typewriter.bolden("Mods found:"))
     self.print_mod_categories(mods)
