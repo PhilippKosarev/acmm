@@ -15,6 +15,7 @@ class Clipboard:
     for item in input_list1:
       if self.is_string_in_list(input_list2, item):
         result_list.append(item)
+    result_list = self.deduplicate(result_list)
     return result_list
 
   # Removes duplicates from a given list
@@ -55,8 +56,7 @@ class Clipboard:
   def match_suffix(self, input_list: list, input_suffix: str):
     result_list = []
     for item in input_list:
-      item_suffix = item.removesuffix(input_suffix)
-      if item != item_suffix:
+      if item.endswith(input_suffix):
         result_list.append(item)
     return result_list
 

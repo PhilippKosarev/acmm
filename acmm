@@ -3,7 +3,7 @@
 # Imports
 import sys, threading
 from libjam import Captain, Drawer, Typewriter, Clipboard, Flashcard
-from acmm_backend import ModManager
+from mod_manager import ModManager
 
 # Jam classes
 typewriter = Typewriter()
@@ -41,12 +41,17 @@ class CLI:
     # Searching for mods
     typewriter.print_status("Searching for mods...")
     mods = mod_manager.find_mods(unpacked)
+    meta_mods = mod_manager.find_meta_mods(unpacked)
     if mods == {}:
       typewriter.print("No mods found.")
       sys.exit(-1)
-    # Getting user input
+    # Joining metamods
+    if meta_mods != {}:
+      mods = mods | meta_mods
+    # Printing found mods
     typewriter.print(typewriter.bolden("Mods found:"))
     self.print_mod_categories(mods)
+    # Getting user input
     if flashcard.yn_prompt("Install listed mods?") is False:
       print("Installation cancelled.")
       sys.exit(0)
@@ -99,39 +104,39 @@ app = "acmm"
 description = "Assetto Corsa Mod Manager manages mods for Assetto Corsa"
 # help = "" # If you wish to set your own help page text
 commands = {
-'list':     {'function': cli.list,
-'description': 'Lists installed mods'},
+  'list':     {'function': cli.list,
+  'description': 'Lists installed mods'},
 
-'install':  {'function': cli.install,
-'description': 'Installs the specified mod'},
+  'install':  {'function': cli.install,
+  'description': 'Installs the specified mod'},
 
-'remove':   {'function': cli.remove,
-'description': 'Removes specified mods'},
+  'remove':   {'function': cli.remove,
+  'description': 'Removes specified mods'},
 }
 options = {
-'car':      {'long': ['car', 'cars'],           'short': ['c'], 'option': 'list_cars',
-'description': 'Only list|install|remove cars'},
+  'car':      {'long': ['car', 'cars'],           'short': ['c'], 'option': 'list_cars',
+  'description': 'Only list|install|remove cars'},
 
-'track':    {'long': ['track', 'tracks'],       'short': ['t'], 'option': 'list_tracks',
-'description': 'Only list|install|remove tracks'},
+  'track':    {'long': ['track', 'tracks'],       'short': ['t'], 'option': 'list_tracks',
+  'description': 'Only list|install|remove tracks'},
 
-'ppfilter': {'long': ['ppfilter', 'ppfilters'], 'short': ['f'], 'option': 'list_ppfilters',
-'description': 'Only list|install|remove PP filters'},
+  'ppfilter': {'long': ['ppfilter', 'ppfilters'], 'short': ['f'], 'option': 'list_ppfilters',
+  'description': 'Only list|install|remove PP filters'},
 
-'weather': {'long': ['weather'],                'short': ['w'], 'option': 'list_weather',
-'description': 'Only list|install|remove weather'},
+  'weather': {'long': ['weather'],                'short': ['w'], 'option': 'list_weather',
+  'description': 'Only list|install|remove weather'},
 
-'python':  {'long': ['py', 'python'],           'short': ['p'], 'option': 'list_python',
-'description': 'Only list|install|remove python apps'},
+  'python':  {'long': ['py', 'python'],           'short': ['p'], 'option': 'list_python',
+  'description': 'Only list|install|remove python apps'},
 
-'lua':  {'long': ['lua'],                       'short': ['l'], 'option': 'list_lua',
-'description': 'Only list|install|remove lua apps'},
+  'lua':  {'long': ['lua'],                       'short': ['l'], 'option': 'list_lua',
+  'description': 'Only list|install|remove lua apps'},
 
-'all':      {'long': ['all'],                   'short': ['A'], 'option': 'list_all',
-'description': 'Do not filter out Kunos assets'},
+  'all':      {'long': ['all'],                   'short': ['a'], 'option': 'list_all',
+  'description': 'Do not filter out Kunos assets'},
 
-'kunos':    {'long': ['kunos'],                 'short': ['k'], 'option': 'only_kunos',
-'description': 'Filter out non Kunos assets'},
+  'kunos':    {'long': ['kunos'],                 'short': ['k'], 'option': 'only_kunos',
+  'description': 'Filter out non Kunos assets'},
 }
 filter_options = ['list_cars', 'list_tracks', 'list_ppfilters', 'list_python', 'list_lua', 'list_weather']
 
