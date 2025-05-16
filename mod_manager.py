@@ -90,6 +90,12 @@ class ModManager:
     }
 
     self.meta_categories = {
+    'car_skins': {'title': "Car skins", 'directory': f"{AC_DIR}/content/cars",
+    'find_function': mod_finder.find_car_skins, 'keep_old': True},
+
+    'track_additions': {'title': "Track add-ons", 'directory': f"{AC_DIR}/content/tracks",
+    'find_function': mod_finder.find_track_addons, 'keep_old': True},
+
     'extensions': {'title': "Extensions", 'directory': f"{AC_DIR}/extension",
     'find_function': mod_finder.find_extensions, 'keep_old': True},
 
@@ -139,7 +145,7 @@ class ModManager:
       mod_list = []
       for folder in folders:
         mod_list = mod_list + find_function(folder)
-      if mod_list == []:
+      if mod_list == [] or mod_list == [TEMP]:
         continue
       mods[category] = {'title': title, 'mod_list': mod_list, 'install_location': install_location}
     return mods
@@ -154,7 +160,7 @@ class ModManager:
       keep_old = self.meta_categories.get(category).get('keep_old')
       mod_finder = ModFinder()
       mod_list = find_function(TEMP)
-      if mod_list == []:
+      if mod_list == [] or mod_list == [TEMP]:
         continue
       if mod_list is not None:
         meta_mods[category] = {
@@ -169,11 +175,10 @@ class ModManager:
     drawer.make_folder(TEMP)
 
   def extract_mod(self, path: str, progress_function=None):
-    if drawer.exists(path) is False:
-      return None
     if drawer.is_folder(path):
       basename = drawer.basename(path)
       path = drawer.copy(path, f"{TEMP}/{basename}")
+      return path
     elif drawer.is_archive(path):
       path = drawer.extract_archive(path, TEMP, progress_function)
       return path

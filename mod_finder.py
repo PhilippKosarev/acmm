@@ -14,7 +14,6 @@ class ModFinder():
 
   def find_tracks(self, folder: str):
     files = drawer.get_files_recursive(folder)
-    folders = drawer.get_folders_recursive(folder)
     # Finding a kn5 files with the same name as parent dir
     kn5_folders = []
     kn5_files = clipboard.match_suffix(files, ".kn5")
@@ -114,3 +113,25 @@ class ModFinder():
       if gui_folders[0] != '':
         return drawer.get_all(gui_folders[0])
     return []
+
+  def find_car_skins(self, folder: str):
+    cars = self.find_cars(folder)
+    folders = drawer.get_folders_recursive(folder)
+    skin_folders = clipboard.match_suffix(folders, '/skins')
+    parents = drawer.get_parent(skin_folders)
+    skins = clipboard.remove_duplicates(parents, cars)
+    return skins
+
+  def find_track_addons(self, folder: str):
+    tracks = self.find_tracks(folder)
+    files = drawer.get_files_recursive(folder)
+    folders = drawer.get_folders_recursive(folder)
+    map_files = clipboard.match_suffix(files, "/map.png")
+    data_folders = clipboard.match_suffix(folders, "/data")
+    ai_folders = clipboard.match_suffix(folders, "/ai")
+    parents = []
+    for item in [map_files, data_folders, ai_folders]:
+      item_parents = drawer.get_parent(drawer.get_parent(item))
+      parents = parents + item_parents
+    parents = clipboard.deduplicate(parents)
+    return parents
