@@ -1,0 +1,3 @@
+[submodule "libjam"]
+	path = libjam
+	url = https://github.com/PhilippKosarev/libjam.git
