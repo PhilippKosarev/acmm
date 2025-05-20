@@ -53,39 +53,40 @@ if AC_DIR.endswith(assettocorsa) is False:
 Currently specified AC directory:\n{AC_DIR}''')
   sys.exit(-1)
 
-
 # Manages mods
 class ModManager:
 
   def __init__(self, options):
     # Mod categories
     self.options = options
-    def get_filter(i: str):
-      return config.get('filters').get(i)
+    def get_option(opt: str):
+      return options.get(opt).get('enabled')
+    def get_filter(filt: str):
+      return config.get('filters').get(filt)
     # Defining mod categories
     self.mod_categories = {
       "cars": {'title':         "Cars",        'directory': f'{AC_DIR}/content/cars',
-      'filter_list': get_filter('kunos_cars'), 'enabled': options.get('list_cars'),
+      'filter_list': get_filter('kunos_cars'), 'enabled': get_option('car'),
       'find_function': mod_finder.find_cars},
 
       "tracks": {'title':       "Tracks",        'directory': f'{AC_DIR}/content/tracks',
-      'filter_list': get_filter('kunos_tracks'), 'enabled': options.get('list_tracks'),
+      'filter_list': get_filter('kunos_tracks'), 'enabled': get_option('track'),
       'find_function': mod_finder.find_tracks},
 
       "python_apps": {'title':   "Python apps", 'directory': f'{AC_DIR}/apps/python',
-      'filter_list': get_filter('kunos_apps'),  'enabled': options.get('list_python'),
+      'filter_list': get_filter('kunos_apps'),  'enabled': get_option('python'),
       'find_function': mod_finder.find_python_apps},
 
       "lua_apps": {'title':   "Lua apps", 'directory': f'{AC_DIR}/apps/lua',
-      'filter_list': [],            'enabled': options.get('list_lua'),
+      'filter_list': [],            'enabled': get_option('lua'),
       'find_function': mod_finder.find_lua_apps},
 
       "ppfilters": {'title':    "PP Filters",       'directory': f'{AC_DIR}/system/cfg/ppfilters',
-      'filter_list': get_filter('kunos_ppfilters'), 'enabled': options.get('list_ppfilters'),
+      'filter_list': get_filter('kunos_ppfilters'), 'enabled': get_option('ppfilter'),
       'find_function': mod_finder.find_ppfilters},
 
       "weather": {'title':    "Weather",          'directory': f'{AC_DIR}/content/weather',
-      'filter_list': get_filter('kunos_weather'), 'enabled': options.get('list_weather'),
+      'filter_list': get_filter('kunos_weather'), 'enabled': get_option('weather'),
       'find_function': mod_finder.find_weather},
     }
 
@@ -119,11 +120,13 @@ class ModManager:
       mod_list = drawer.get_all(directory)
       mod_basename = drawer.basename(mod_list)
       filtered_basename = clipboard.filter(mod_basename, filter_list)
-      if self.options.get('list_all') is False and self.options.get('only_kunos') is False:
-        mod_list = clipboard.match_suffixes(mod_list, filtered_basename)
-      if self.options.get('only_kunos') is True:
+      if self.options.get('kunos').get('enabled'):
         non_kunos = clipboard.match_suffixes(mod_list, filtered_basename)
         mod_list = clipboard.filter(mod_list, non_kunos)
+      elif self.options.get('all').get('enabled'):
+        mod_list = mod_list
+      else:
+        mod_list = clipboard.match_suffixes(mod_list, filtered_basename)
       # Removing `readme_weather.txt` from list
       for item in clipboard.match_suffix(mod_list, 'readme_weather.txt'):
         mod_list.remove(item)

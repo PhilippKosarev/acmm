@@ -6,8 +6,9 @@ from libjam import Captain, Drawer, Typewriter, Clipboard, Flashcard
 from mod_manager import ModManager
 
 # Jam classes
-typewriter = Typewriter()
+captain = Captain()
 drawer = Drawer()
+typewriter = Typewriter()
 clipboard = Clipboard()
 flashcard = Flashcard()
 
@@ -126,50 +127,52 @@ commands = {
   'description': 'Removes specified mods'},
 }
 options = {
-  'car':      {'long': ['car', 'cars'],           'short': ['c'], 'option': 'list_cars',
+  'car':      {'long': ['car', 'cars'],           'short': ['c'],
   'description': 'Only list|install|remove cars'},
 
-  'track':    {'long': ['track', 'tracks'],       'short': ['t'], 'option': 'list_tracks',
+  'track':    {'long': ['track', 'tracks'],       'short': ['t'],
   'description': 'Only list|install|remove tracks'},
 
-  'ppfilter': {'long': ['ppfilter', 'ppfilters'], 'short': ['f'], 'option': 'list_ppfilters',
+  'ppfilter': {'long': ['ppfilter', 'ppfilters'], 'short': ['f'],
   'description': 'Only list|install|remove PP filters'},
 
-  'weather': {'long': ['weather'],                'short': ['w'], 'option': 'list_weather',
+  'weather': {'long': ['weather'],                'short': ['w'],
   'description': 'Only list|install|remove weather'},
 
-  'python':  {'long': ['py', 'python'],           'short': ['p'], 'option': 'list_python',
+  'python':  {'long': ['py', 'python'],           'short': ['p'],
   'description': 'Only list|install|remove python apps'},
 
-  'lua':  {'long': ['lua'],                       'short': ['l'], 'option': 'list_lua',
+  'lua':  {'long': ['lua'],                       'short': ['l'],
   'description': 'Only list|install|remove lua apps'},
 
-  'all':      {'long': ['all'],                   'short': ['a'], 'option': 'list_all',
+  'all':      {'long': ['all'],                   'short': ['a'],
   'description': 'Do not filter out Kunos assets'},
 
-  'kunos':    {'long': ['kunos'],                 'short': ['k'], 'option': 'only_kunos',
+  'kunos':    {'long': ['kunos'],                 'short': ['k'],
   'description': 'Filter out non Kunos assets'},
 }
-filter_options = ['list_cars', 'list_tracks', 'list_ppfilters', 'list_python', 'list_lua', 'list_weather']
+filter_options = ['car', 'track', 'ppfilter', 'weather', 'python', 'lua']
 
-# Processing user input
-arguments = sys.argv; arguments.remove(arguments[0])
-captain = Captain(app, description, commands, options)
-# captain.set_help(help) # If you wish to set your own help page text
-captain.interpret(arguments)
-options = captain.get_option_values()
+
+# Parsing user input
+arguments = sys.argv
+arguments.remove(arguments[0])
+help = captain.generate_help(app, description, commands, options)
+interpretation = captain.interpret(app, help, commands, arguments, options)
+function = interpretation.get('function')
+options = interpretation.get('options')
 
 # Enabling all filters if none are active
 disabled_filters = 0
 for filter_option in filter_options:
-  if options.get(filter_option) is False:
+  if options.get(filter_option).get('enabled') is False:
     disabled_filters += 1
 if disabled_filters == len(filter_options):
   for filter_option in filter_options:
-    options[filter_option] = True
+    options[filter_option]['enabled'] = True
 
+# Passing options to mod_manager
 mod_manager = ModManager(options)
 
-# Executing input
-function = captain.get_function()
-function
+# Executing function
+exec(f"cli.{function}")
