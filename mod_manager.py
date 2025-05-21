@@ -8,6 +8,8 @@ clipboard = Clipboard()
 flashcard = Flashcard()
 
 # Internal imports
+from data import Data
+data = Data()
 from mod_finder import ModFinder
 mod_finder = ModFinder()
 
@@ -19,8 +21,8 @@ class ModManager:
 
   def __init__(self, config: dict, options: dict):
     AC_DIR = config.get('paths').get('AC_DIR')
-    def get_filter(filt: str):
-      return config.get('filters').get(filt)
+    def get_filter(string: str):
+      return data.get(string)
     self.options = options
     def get_option(opt: str):
       return options.get(opt).get('enabled')
