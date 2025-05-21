@@ -2,67 +2,28 @@
 import sys
 
 # Jamming imports
-from libjam import Drawer, Clipboard, Notebook, Flashcard
-# Jamming shorthands
+from libjam import Drawer, Clipboard, Flashcard
 drawer = Drawer()
 clipboard = Clipboard()
-notebook = Notebook()
 flashcard = Flashcard()
 
 # Internal imports
 from mod_finder import ModFinder
-# Internal shorthands
 mod_finder = ModFinder()
 
 # Getting important paths
-HOME = drawer.get_home()
 TEMP = f"{drawer.get_temp()}/accm"
-
-# Setting config paths
-CONFIG_DIR = f"{HOME}/.config/acmm"
-CONFIG_FILE = f"{CONFIG_DIR}/config.toml"
-
-# Parsing config
-notebook.check_config(CONFIG_FILE)
-config = notebook.read_toml(CONFIG_FILE)
-
-# Checking AC_DIR
-## Likely AC_DIR locations
-assettocorsa = "steamapps/common/assettocorsa"
-content_dirs = [f"{HOME}/.local/share/Steam/{assettocorsa}",
-f"{HOME}/.var/app/com.valvesoftware.Steam/data/Steam/{assettocorsa}",
-f"C:/Program Files (x86)/Steam/{assettocorsa}"]
-## Getting AC_DIR
-AC_DIR = config.get('paths').get("AC_DIR")
-if AC_DIR == None:
-  for directory in content_dirs:
-    if drawer.is_folder(directory):
-      AC_DIR = directory
-# Checking AC_DIR
-if AC_DIR == None:
-  print(f"Assetto Corsa not found.\n\
-If Assetto Corsa is not installed in the default location, \
-you might need to specify the path to '/steamapps/common/assettocorsa' \
-in '{CONFIG_FILE}'.")
-  sys.exit(-1)
-if drawer.is_folder(AC_DIR) is False:
-  print(f"Path to Assetto Corsa's folder specified in '{CONFIG_FILE}' does not exist.")
-  sys.exit(-1)
-if AC_DIR.endswith(assettocorsa) is False:
-  print(f'''Path to Assetto Corsa in '{CONFIG_FILE}' is incorrect. It should end with '/{assettocorsa}'.)
-Currently specified AC directory:\n{AC_DIR}''')
-  sys.exit(-1)
 
 # Manages mods
 class ModManager:
 
-  def __init__(self, options):
-    # Mod categories
+  def __init__(self, config: dict, options: dict):
+    AC_DIR = config.get('paths').get('AC_DIR')
+    def get_filter(filt: str):
+      return config.get('filters').get(filt)
     self.options = options
     def get_option(opt: str):
       return options.get(opt).get('enabled')
-    def get_filter(filt: str):
-      return config.get('filters').get(filt)
     # Defining mod categories
     self.mod_categories = {
       "cars": {'title':         "Cars",        'directory': f'{AC_DIR}/content/cars',

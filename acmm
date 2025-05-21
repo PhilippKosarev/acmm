@@ -2,7 +2,7 @@
 
 # Imports
 import sys, threading
-from libjam import Captain, Drawer, Typewriter, Clipboard, Flashcard
+from libjam import Captain, Drawer, Typewriter, Clipboard, Notebook, Flashcard
 from mod_manager import ModManager
 
 # Jam classes
@@ -10,7 +10,43 @@ captain = Captain()
 drawer = Drawer()
 typewriter = Typewriter()
 clipboard = Clipboard()
+notebook = Notebook()
 flashcard = Flashcard()
+
+# Handling config
+HOME = drawer.get_home()
+CONFIG_DIR = f"{HOME}/.config/acmm"
+CONFIG_FILE = f"{CONFIG_DIR}/config.toml"
+notebook.check_config(CONFIG_FILE)
+config = notebook.read_toml(CONFIG_FILE)
+
+# Checking AC_DIR
+## Likely AC_DIR locations
+assettocorsa = "steamapps/common/assettocorsa"
+content_dirs = [f"{HOME}/.local/share/Steam/{assettocorsa}",
+f"{HOME}/.var/app/com.valvesoftware.Steam/data/Steam/{assettocorsa}",
+f"C:/Program Files (x86)/Steam/{assettocorsa}"]
+## Getting AC_DIR
+AC_DIR = config.get('paths').get("AC_DIR")
+if AC_DIR == None:
+  for directory in content_dirs:
+    if drawer.is_folder(directory):
+      AC_DIR = directory
+# Checking AC_DIR
+if AC_DIR == None:
+  print(f"Assetto Corsa not found.\n\
+If Assetto Corsa is not installed in the default location, \
+you might need to specify the path to '/steamapps/common/assettocorsa' \
+in '{CONFIG_FILE}'.")
+  sys.exit(-1)
+if drawer.is_folder(AC_DIR) is False:
+  print(f"Path to Assetto Corsa's folder specified in '{CONFIG_FILE}' does not exist.")
+  sys.exit(-1)
+if AC_DIR.endswith(assettocorsa) is False:
+  print(f'''Path to Assetto Corsa in '{CONFIG_FILE}' is incorrect. It should end with '/{assettocorsa}'.)
+Currently specified AC directory:\n{AC_DIR}''')
+  sys.exit(-1)
+config['paths']['AC_DIR'] = AC_DIR
 
 # The command line interface functions
 class CLI:
@@ -172,7 +208,7 @@ if disabled_filters == len(filter_options):
     options[filter_option]['enabled'] = True
 
 # Passing options to mod_manager
-mod_manager = ModManager(options)
+mod_manager = ModManager(config, options)
 
 # Executing function
 exec(f"cli.{function}")
