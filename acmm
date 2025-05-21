@@ -153,7 +153,7 @@ cli = CLI()
 
 # Inputs/Commands/Options configuration
 app = "acmm"
-description = "Assetto Corsa Mod Manager manages mods for Assetto Corsa"
+description = "A mod manager for Assetto Corsa"
 # help = "" # If you wish to set your own help page text
 commands = {
   'list':     {'function': cli.list,
