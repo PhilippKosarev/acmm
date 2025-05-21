@@ -54,17 +54,17 @@ class ModManager:
     }
 
     self.meta_categories = {
-    'car_skins': {'title': "Car skins", 'directory': f"{AC_DIR}/content/cars",
-    'find_function': mod_finder.find_car_skins, 'keep_old': True},
+      'car_skins': {'title': "Car skins", 'directory': f"{AC_DIR}/content/cars",
+      'find_function': mod_finder.find_car_skins, 'keep_old': True},
 
-    'track_additions': {'title': "Track add-ons", 'directory': f"{AC_DIR}/content/tracks",
-    'find_function': mod_finder.find_track_addons, 'keep_old': True},
+      'track_additions': {'title': "Track add-ons", 'directory': f"{AC_DIR}/content/tracks",
+      'find_function': mod_finder.find_track_addons, 'keep_old': True},
 
-    'extensions': {'title': "Extensions", 'directory': f"{AC_DIR}/extension",
-    'find_function': mod_finder.find_extensions, 'keep_old': True},
+      'extensions': {'title': "Extensions", 'directory': f"{AC_DIR}/extension",
+      'find_function': mod_finder.find_extensions, 'keep_old': True},
 
-    'gui': {'title': "GUI", 'directory': f"{AC_DIR}/content/gui",
-    'find_function': mod_finder.find_gui, 'keep_old': True},
+      'gui': {'title': "GUI", 'directory': f"{AC_DIR}/content/gui",
+      'find_function': mod_finder.find_gui, 'keep_old': True},
     }
 
   # Creates directory lists for each mod_category
