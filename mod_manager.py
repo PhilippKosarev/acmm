@@ -8,9 +8,9 @@ clipboard = Clipboard()
 flashcard = Flashcard()
 
 # Internal imports
-from data import Data
+from .data import Data
 data = Data()
-from mod_finder import ModFinder
+from .mod_finder import ModFinder
 mod_finder = ModFinder()
 
 # Getting important paths
