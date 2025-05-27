@@ -1,7 +1,7 @@
 #! /usr/bin/python
 
 # Imports
-import sys
+import sys, os
 
 # Jam imports
 from libjam import Captain, Drawer, Typewriter, Clipboard, Notebook, Flashcard
@@ -22,9 +22,11 @@ data = Data()
 
 # Handling config
 HOME = drawer.get_home()
+script_folder = os.path.dirname(os.path.realpath(__file__))
+CONFIG_TEMPLATE_FILE = f"{script_folder}/config.toml.in"
 CONFIG_DIR = f"{HOME}/.config/acmm"
 CONFIG_FILE = f"{CONFIG_DIR}/config.toml"
-notebook.check_config(CONFIG_FILE)
+notebook.check_config(CONFIG_TEMPLATE_FILE, CONFIG_FILE)
 config = notebook.read_toml(CONFIG_FILE)
 
 # Checking AC_DIR

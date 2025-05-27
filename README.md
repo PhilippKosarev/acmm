@@ -22,7 +22,7 @@ It's also able to fully, and automatically, install SOL.
 ## How to run ACMM
 Installing the dependencies:
 ```
-pip install toml Send2Trash patool rarfile pathlib
+pip install libjam
 ```
 
 Cloning the repo:
