@@ -2,15 +2,16 @@
 import sys
 
 # Jamming imports
-from libjam import Drawer, Clipboard, Flashcard
+from libjam import Drawer, Clipboard, Notebook, Flashcard
 drawer = Drawer()
 clipboard = Clipboard()
+notebook = Notebook()
 flashcard = Flashcard()
 
 # Internal imports
-from .data import Data
+from data import Data
 data = Data()
-from .mod_finder import ModFinder
+from mod_finder import ModFinder
 mod_finder = ModFinder()
 
 # Getting important paths
@@ -93,7 +94,49 @@ class ModManager:
       # Removing `readme_weather.txt` from list
       for item in clipboard.match_suffix(mod_list, 'readme_weather.txt'):
         mod_list.remove(item)
-      mods[category] = {'title': title, 'mod_list': mod_list}
+      # Adding additional details
+      mod_dict = {}
+      for mod in mod_list:
+        mod_dict[mod] = {}
+        # Adding ui info
+        def read_ui_json(file):
+          try:
+            ui_dict = notebook.read_json(ui_car)
+            for item in ui_dict:
+              value = ui_dict.get(item)
+              mod_dict[mod][item] = value
+          except:
+            pass
+        ui_car = f"{mod}/ui/ui_car.json"
+        if drawer.is_file(ui_car): read_ui_json(ui_car)
+        ui_track = f"{mod}/ui/ui_track.json"
+        if drawer.is_file(ui_track): read_ui_json(ui_track)
+        # Adding badge
+        badge = f"{mod}/ui/badge.png"
+        if drawer.is_file(badge): mod_dict[mod]['badge'] = badge
+        else: mod_dict[mod]['badge'] = None
+        # Addings skins
+        skins_dir = f"{mod}/skins"
+        skins = {}
+        if drawer.is_folder(skins_dir):
+          skin_list = drawer.get_folders(skins_dir)
+          for skin in skin_list:
+            skins[skin] = {}
+            # Adding ui info
+            ui_info = f"{skin}/ui_skin.json"
+            if drawer.is_file(ui_info):
+              ui_dict = notebook.read_json(ui_info)
+              for item in ui_dict:
+                value = ui_dict.get(item)
+                mod_dict[mod][item] = value
+            # Adding preview image
+            preview = f"{skin}/preview.jpg"
+            if drawer.is_file(preview): skins[skin]['preview'] = preview
+            # Adding livery image
+            livery = f"{skin}/livery.png"
+            if drawer.is_file(livery): skins[skin]['livery'] = livery
+        mod_dict[mod]['skins'] = skins
+      mods[category] = {'title': title, 'mod_list': mod_dict}
     return mods
 
   # Finding mods in given folder
