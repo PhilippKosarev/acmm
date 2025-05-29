@@ -126,9 +126,10 @@ class ModManager:
 
   def safe_read(self, json_file: str):
     try:
-      return notebook.read_json(ui_car)
+      data = notebook.read_json(json_file)
     except:
-      return {}
+      data = {}
+    return data
 
   def get_skins(self, skins_dir):
     if drawer.is_folder(skins_dir) is False:
