@@ -99,45 +99,75 @@ class ModManager:
       for mod in mod_list:
         mod_dict[mod] = {}
         # Adding ui info
-        def read_ui_json(file):
-          try:
-            ui_dict = notebook.read_json(ui_car)
-            for item in ui_dict:
-              value = ui_dict.get(item)
-              mod_dict[mod][item] = value
-          except:
-            pass
         ui_car = f"{mod}/ui/ui_car.json"
-        if drawer.is_file(ui_car): read_ui_json(ui_car)
+        if drawer.is_file(ui_car): mod_dict[mod] = self.safe_read(ui_car)
         ui_track = f"{mod}/ui/ui_track.json"
-        if drawer.is_file(ui_track): read_ui_json(ui_track)
+        if drawer.is_file(ui_track): mod_dict[mod] = self.safe_read(ui_track)
         # Adding badge
         badge = f"{mod}/ui/badge.png"
         if drawer.is_file(badge): mod_dict[mod]['badge'] = badge
         else: mod_dict[mod]['badge'] = None
+        # Adding outline
+        outline = f"{mod}/ui/outline.png"
+        if drawer.is_file(outline): mod_dict[mod]['outline'] = outline
+        else: mod_dict[mod]['outline'] = None
         # Addings skins
         skins_dir = f"{mod}/skins"
-        skins = {}
-        if drawer.is_folder(skins_dir):
-          skin_list = drawer.get_folders(skins_dir)
-          for skin in skin_list:
-            skins[skin] = {}
-            # Adding ui info
-            ui_info = f"{skin}/ui_skin.json"
-            if drawer.is_file(ui_info):
-              ui_dict = notebook.read_json(ui_info)
-              for item in ui_dict:
-                value = ui_dict.get(item)
-                mod_dict[mod][item] = value
-            # Adding preview image
-            preview = f"{skin}/preview.jpg"
-            if drawer.is_file(preview): skins[skin]['preview'] = preview
-            # Adding livery image
-            livery = f"{skin}/livery.png"
-            if drawer.is_file(livery): skins[skin]['livery'] = livery
+        if drawer.is_folder(skins_dir): skins = self.get_skins(skins_dir)
+        else: skins = None
         mod_dict[mod]['skins'] = skins
+        # Adding layouts
+        layouts_dir = f"{mod}/skins"
+        if drawer.is_folder(layouts_dir): layouts = self.get_layouts(layouts_dir)
+        else: layouts = None
+        mod_dict[mod]['layouts'] = layouts
       mods[category] = {'title': title, 'mod_list': mod_dict}
     return mods
+
+  def safe_read(self, json_file: str):
+    try:
+      return notebook.read_json(ui_car)
+    except:
+      return {}
+
+  def get_skins(self, skins_dir):
+    if drawer.is_folder(skins_dir) is False:
+      return None
+    skins = {}
+    skin_list = drawer.get_folders(skins_dir)
+    for skin in skin_list:
+      skins[skin] = {}
+      # Adding ui info
+      ui_info = f"{skin}/ui_skin.json"
+      if drawer.is_file(ui_info):
+        ui_dict = self.safe_read(ui_info)
+        for item in ui_dict:
+          value = ui_dict.get(item)
+          skins[skin][item] = value
+      # Adding preview image
+      preview = f"{skin}/preview.jpg"
+      if drawer.is_file(preview):
+        skins[skin]['preview'] = preview
+      # Adding livery image
+      livery = f"{skin}/livery.png"
+      if drawer.is_file(livery):
+        skins[skin]['livery'] = livery
+    return skins
+
+  def get_layouts(self, layouts_dir):
+    layouts = {}
+    layout_list = drawer.get_folders(layouts_dir)
+    for layout in layout_list:
+      layouts[layout] = {}
+      # Adding ui json stuff
+      ui_json = f"{layout}/ui_track.json"
+      if drawer.is_file(ui_json):
+        layouts[layout] = self.safe_read(ui_json)
+      # Adding a preview
+      preview = f"{layout}/preview.png"
+      if drawer.is_file(preview):
+        layouts[layout]['preview'] = preview
+    return layouts
 
   # Finding mods in given folder
   def find_mods(self):
