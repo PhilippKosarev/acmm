@@ -117,7 +117,7 @@ class ModManager:
         else: skins = None
         mod_dict[mod]['skins'] = skins
         # Adding layouts
-        layouts_dir = f"{mod}/skins"
+        layouts_dir = f"{mod}/ui"
         if drawer.is_folder(layouts_dir): layouts = self.get_layouts(layouts_dir)
         else: layouts = None
         mod_dict[mod]['layouts'] = layouts
