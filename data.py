@@ -23,7 +23,7 @@ class Data:
     ## Kunos apps
     self.kunos_apps = ['Chat', 'gMeter', 'system']
     ## Kunos PP filters
-    self.kunos_ppfilters = ['b&w.ini', 'blue_steel.ini', 'custom config example.ini', 'default.ini', 'default_bright.ini', 'default_dark.ini', 'movie.ini', 'natural.ini', 'photographic.ini', 'sepia.ini', 'vintage.ini']
+    self.kunos_ppfilters = ['b&w', 'blue_steel', 'custom config example', 'default', 'default_bright', 'default_dark', 'movie', 'natural', 'photographic', 'sepia', 'vintage']
     ## Kunos weather
     self.kunos_weather = ['1_heavy_fog', '2_light_fog', '3_clear', '4_mid_clear', '5_light_clouds', '6_mid_clouds', '7_heavy_clouds']
 

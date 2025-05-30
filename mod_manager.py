@@ -81,46 +81,49 @@ class ModManager:
         continue
       title = self.mod_categories.get(category).get('title')
       filter_list = self.mod_categories.get(category).get('filter_list')
-      mod_list = drawer.get_all(directory)
-      mod_basename = drawer.basename(mod_list)
-      filtered_basename = clipboard.filter(mod_basename, filter_list)
-      if self.options.get('kunos').get('enabled'):
-        non_kunos = clipboard.match_suffixes(mod_list, filtered_basename)
-        mod_list = clipboard.filter(mod_list, non_kunos)
-      elif self.options.get('all').get('enabled'):
-        mod_list = mod_list
-      else:
-        mod_list = clipboard.match_suffixes(mod_list, filtered_basename)
-      # Removing `readme_weather.txt` from list
-      for item in clipboard.match_suffix(mod_list, 'readme_weather.txt'):
-        mod_list.remove(item)
-      # Adding additional details
+      # Getting and filtering mod files
       mod_dict = {}
-      for mod in mod_list:
-        mod_dict[mod] = {}
+      for item in drawer.get_all(directory):
+        mod_id = drawer.basename(item).removesuffix('.ini')
+        if self.options.get('kunos').get('enabled') and clipboard.is_string_in_list(filter_list, mod_id) is False:
+          continue
+        if self.options.get('all').get('enabled') is False and clipboard.is_string_in_list(filter_list, mod_id):
+          continue
+        mod_dict[mod_id] = {'path': item}
+      # Filtering
+      else:
+        for mod_id in mod_dict:
+          if clipboard.is_string_in_list(filter_list, mod_id):
+            mod_dict.pop(mod_id)
+      # Removing `readme_weather.txt` from list
+      if clipboard.is_string_in_list(mod_dict, 'readme_weather.txt'):
+        mod_dict.pop(mod_id)
+      # Adding additional details
+      for mod_id in mod_dict:
+        mod_path = mod_dict.get(mod_id).get('path')
         # Adding ui info
-        ui_car = f"{mod}/ui/ui_car.json"
-        if drawer.is_file(ui_car): mod_dict[mod] = self.safe_read(ui_car)
-        ui_track = f"{mod}/ui/ui_track.json"
-        if drawer.is_file(ui_track): mod_dict[mod] = self.safe_read(ui_track)
+        ui_car = f"{mod_path}/ui/ui_car.json"
+        if drawer.is_file(ui_car): mod_dict[mod_id] = mod_dict.get(mod_id) | self.safe_read(ui_car)
+        ui_track = f"{mod_path}/ui/ui_track.json"
+        if drawer.is_file(ui_track): mod_dict[mod_id] = mod_dict.get(mod_id) | self.safe_read(ui_track)
         # Adding badge
-        badge = f"{mod}/ui/badge.png"
-        if drawer.is_file(badge): mod_dict[mod]['badge'] = badge
-        else: mod_dict[mod]['badge'] = None
+        badge = f"{mod_path}/ui/badge.png"
+        if drawer.is_file(badge): mod_dict[mod_id]['badge'] = badge
+        else: mod_dict[mod_id]['badge'] = None
         # Adding outline
-        outline = f"{mod}/ui/outline.png"
-        if drawer.is_file(outline): mod_dict[mod]['outline'] = outline
-        else: mod_dict[mod]['outline'] = None
+        outline = f"{mod_path}/ui/outline.png"
+        if drawer.is_file(outline): mod_dict[mod_id]['outline'] = outline
+        else: mod_dict[mod_id]['outline'] = None
         # Addings skins
-        skins_dir = f"{mod}/skins"
+        skins_dir = f"{mod_path}/skins"
         if drawer.is_folder(skins_dir): skins = self.get_skins(skins_dir)
         else: skins = None
-        mod_dict[mod]['skins'] = skins
+        mod_dict[mod_id]['skins'] = skins
         # Adding layouts
-        layouts_dir = f"{mod}/ui"
+        layouts_dir = f"{mod_path}/ui"
         if drawer.is_folder(layouts_dir): layouts = self.get_layouts(layouts_dir)
         else: layouts = None
-        mod_dict[mod]['layouts'] = layouts
+        mod_dict[mod_id]['layouts'] = layouts
       mods[category] = {'title': title, 'mod_list': mod_dict}
     return mods
 

@@ -135,16 +135,11 @@ class CLI:
       mod_list = mods.get(category).get('mod_list')
       self.print_mod_category(title, mod_list)
 
-  def print_mod_category(self, title: str, mod_dict: dict):
+  def print_mod_category(self, title: str, mod_list: dict):
     size = 0
-    mod_list = []
-    for item in mod_dict:
-      mod_list.append(item)
-    for mod in mod_list:
-      size += drawer.get_file_size(mod)
+    for mod_id in mod_list:
+      size += drawer.get_file_size(mod_list.get(mod_id).get('path'))
     size = round((size / 1_000_000_000), 1)
-    mod_list = drawer.basename(mod_list)
-    mod_list = clipboard.replace(mod_list, '.ini', '')
     entries = len(mod_list)
     # Quitting if there's nothing to print
     if entries == 0:
