@@ -256,15 +256,18 @@ class ModManager:
 
   def remove_mod(self, mod_id: str, mod_info: dict):
     path = mod_info.get('path')
-    if path.startswith(self.AC_DIR) and (path.endswith(mod) or path.endswith(mod + '.ini')):
+    if drawer.exists(path) is False:
+      print(f"Mod '{mod_id}' at '{path}'.")
+      return 1
+    if path.startswith(self.AC_DIR) and (path.endswith(mod_id) or path.endswith(mod_id + '.ini')):
       drawer.trash(path)
+      return 0
     else:
-      print(f"Aborting unsafe deletion of mod '{mod}' at '{path}'.")
+      print(f"Aborting unsafe deletion of mod '{mod_id}' at '{path}'.")
 
   def remove_mods(self, mods: dict):
     for category in mods:
       mod_list = mods.get(category).get('mod_list')
-      for mod in mod_list:
-        mod_id = mod
-        mod_info = mods.get(category).get('mod_list').get(mod)
+      for mod_id in mod_list:
+        mod_info = mods.get(category).get('mod_list').get(mod_id)
         self.remove_mod(mod_id, mod_info)
