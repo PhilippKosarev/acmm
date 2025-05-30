@@ -91,14 +91,9 @@ class ModManager:
         if self.options.get('all').get('enabled') is False and clipboard.is_string_in_list(filter_list, mod_id):
           continue
         mod_dict[mod_id] = {'path': item}
-      # Filtering
-      else:
-        for mod_id in mod_dict:
-          if clipboard.is_string_in_list(filter_list, mod_id):
-            mod_dict.pop(mod_id)
       # Removing `readme_weather.txt` from list
       if clipboard.is_string_in_list(mod_dict, 'readme_weather.txt'):
-        mod_dict.pop(mod_id)
+        mod_dict.pop('readme_weather.txt')
       # Adding additional details
       for mod_id in mod_dict:
         mod_path = mod_dict.get(mod_id).get('path')
