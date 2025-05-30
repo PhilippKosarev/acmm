@@ -116,63 +116,72 @@ class ModManager:
         if drawer.is_file(outline): mod_dict[mod_id]['outline'] = outline
         else: mod_dict[mod_id]['outline'] = None
         # Addings skins
-        skins_dir = f"{mod_path}/skins"
-        if drawer.is_folder(skins_dir): skins = self.get_skins(skins_dir)
-        else: skins = None
-        mod_dict[mod_id]['skins'] = skins
+        mod_dict[mod_id]['skins'] = self.get_skins(mod_path)
         # Adding layouts
         layouts_dir = f"{mod_path}/ui"
-        if drawer.is_folder(layouts_dir): layouts = self.get_layouts(layouts_dir)
-        else: layouts = None
-        mod_dict[mod_id]['layouts'] = layouts
+        mod_dict[mod_id]['layouts'] = self.get_layouts(mod_path)
       mods[category] = {'title': title, 'mod_list': mod_dict}
     return mods
 
   def safe_read(self, json_file: str):
-    try:
-      data = notebook.read_json(json_file)
-    except:
-      data = {}
-    return data
+    try:    data = notebook.read_json(json_file)
+    except: data = {}
+    return  data
 
-  def get_skins(self, skins_dir):
-    if drawer.is_folder(skins_dir) is False:
-      return None
+  def get_skins(self, mod_path: str):
+    skins_dir = f"{mod_path}/skins"
+    if drawer.is_folder(skins_dir) is False: return None
     skins = {}
-    skin_list = drawer.get_folders(skins_dir)
-    for skin in skin_list:
-      skins[skin] = {}
+    for folder in drawer.get_folders(skins_dir):
+      skin_id = drawer.basename(folder)
+      skins[skin_id] = {'path': folder}
       # Adding ui info
-      ui_info = f"{skin}/ui_skin.json"
+      ui_info = f"{folder}/ui_skin.json"
       if drawer.is_file(ui_info):
         ui_dict = self.safe_read(ui_info)
         for item in ui_dict:
           value = ui_dict.get(item)
-          skins[skin][item] = value
+          skins[skin_id][item] = value
       # Adding preview image
-      preview = f"{skin}/preview.jpg"
+      preview = f"{folder}/preview.jpg"
       if drawer.is_file(preview):
-        skins[skin]['preview'] = preview
+        skins[skin_id]['preview'] = preview
       # Adding livery image
-      livery = f"{skin}/livery.png"
+      livery = f"{folder}/livery.png"
       if drawer.is_file(livery):
-        skins[skin]['livery'] = livery
+        skins[skin_id]['livery'] = livery
+    # Sorting skins by priority
+    # Sorting skins by priority, if present
+    skins = self.sort_by_priority(skins)
     return skins
 
-  def get_layouts(self, layouts_dir):
+  def get_layouts(self, mod_path):
+    layouts_dir = f"{mod_path}/ui"
+    if drawer.is_folder(layouts_dir) is False: return None
     layouts = {}
-    layout_list = drawer.get_folders(layouts_dir)
-    for layout in layout_list:
-      layouts[layout] = {}
+    for folder in drawer.get_folders(layouts_dir):
+      layout_id = drawer.basename(folder)
+      layouts[layout_id] = {'path': folder}
       # Adding ui json stuff
-      ui_json = f"{layout}/ui_track.json"
+      ui_json = f"{folder}/ui_track.json"
       if drawer.is_file(ui_json):
-        layouts[layout] = self.safe_read(ui_json)
+        layouts[layout_id] = self.safe_read(ui_json)
       # Adding a preview
-      preview = f"{layout}/preview.png"
+      preview = f"{folder}/preview.png"
       if drawer.is_file(preview):
-        layouts[layout]['preview'] = preview
+        layouts[layout_id]['preview'] = preview
+    layouts = self.sort_by_priority(layouts)
     return layouts
+
+  def sort_by_priority(self, dictionary):
+    # Checking if able to sort by priority
+    has_priority = True
+    for item in dictionary:
+      if dictionary.get(item).get('priority') is None:
+        return dictionary
+    # Sorting
+    dictionary = dict( sorted(dictionary.items(), key=lambda v: v[1]['priority']) )
+    return dictionary
 
   # Finding mods in given folder
   def find_mods(self):
@@ -256,7 +265,6 @@ class ModManager:
       for mod in mod_list:
         path = mods.get(category).get('mod_list').get(mod).get('path')
         if path.startswith(self.AC_DIR) and (path.endswith(mod) or path.endswith(mod + '.ini')):
-          print(path)
           drawer.trash(mod)
         else:
           print(f"Aborting unsafe deletion of mod '{mod}' at '{path}'.")
