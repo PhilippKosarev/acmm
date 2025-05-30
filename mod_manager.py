@@ -254,12 +254,17 @@ class ModManager:
           progress_function(copied, to_copy)
     self.clean_temp_dir()
 
+  def remove_mod(self, mod_id: str, mod_info: dict):
+    path = mod_info.get('path')
+    if path.startswith(self.AC_DIR) and (path.endswith(mod) or path.endswith(mod + '.ini')):
+      drawer.trash(path)
+    else:
+      print(f"Aborting unsafe deletion of mod '{mod}' at '{path}'.")
+
   def remove_mods(self, mods: dict):
     for category in mods:
       mod_list = mods.get(category).get('mod_list')
       for mod in mod_list:
-        path = mods.get(category).get('mod_list').get(mod).get('path')
-        if path.startswith(self.AC_DIR) and (path.endswith(mod) or path.endswith(mod + '.ini')):
-          drawer.trash(mod)
-        else:
-          print(f"Aborting unsafe deletion of mod '{mod}' at '{path}'.")
+        mod_id = mod
+        mod_info = mods.get(category).get('mod_list').get(mod)
+        self.remove_mod(mod_id, mod_info)
