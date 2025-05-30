@@ -86,10 +86,12 @@ class ModManager:
       mod_dict = {}
       for item in drawer.get_all(directory):
         mod_id = drawer.basename(item).removesuffix('.ini')
-        if self.options.get('kunos').get('enabled') and clipboard.is_string_in_list(filter_list, mod_id) is False:
-          continue
-        if self.options.get('all').get('enabled') is False and clipboard.is_string_in_list(filter_list, mod_id):
-          continue
+        if self.options.get('kunos').get('enabled'):
+          if (mod_id in filter_list) == False:
+            continue
+        else:
+          if self.options.get('all').get('enabled') is False and (mod_id in filter_list):
+            continue
         mod_dict[mod_id] = {'path': item}
       # Removing `readme_weather.txt` from list
       if clipboard.is_string_in_list(mod_dict, 'readme_weather.txt'):
@@ -257,7 +259,7 @@ class ModManager:
   def remove_mod(self, mod_id: str, mod_info: dict):
     path = mod_info.get('path')
     if drawer.exists(path) is False:
-      print(f"Mod '{mod_id}' at '{path}'.")
+      print(f"Mod '{mod_id}' at '{path}' does not exist.")
       return 1
     if path.startswith(self.AC_DIR) and (path.endswith(mod_id) or path.endswith(mod_id + '.ini')):
       drawer.trash(path)
