@@ -57,7 +57,7 @@ config['paths']['AC_DIR'] = AC_DIR
 class CLI:
   # Interface to list installed mods
   def list(self):
-    mods = mod_manager.get_mods()
+    mods = mod_manager.get_installed_mods()
     self.print_mod_categories(mods)
 
   # Interface to install mods
@@ -117,7 +117,25 @@ class CLI:
 
   # Interface to remove mods
   def remove(self, search_term: str):
-    mods = mod_manager.search_mods(search_term)
+    mods = mod_manager.get_installed_mods()
+    # Removing non matching mods
+    for category in mods:
+      non_matching = []
+      mod_list = mods.get(category).get('mod_list')
+      for mod_id in mod_list:
+        if (search_term in mod_id) == False:
+          non_matching.append(mod_id)
+      for mod_id in non_matching:
+        mods[category]['mod_list'].pop(mod_id)
+    # Removing empty categories
+    empty_categories = []
+    for category in mods:
+      mod_list = mods.get(category).get('mod_list')
+      if len(mod_list) == 0:
+        empty_categories.append(category)
+    for category in empty_categories:
+      mods.pop(category)
+    # Checking if any match
     if mods == {}:
       print(f"No mods found matching '{search_term}'.")
       sys.exit(0)

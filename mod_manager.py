@@ -22,6 +22,7 @@ class ModManager:
 
   def __init__(self, config: dict, options: dict):
     AC_DIR = config.get('paths').get('AC_DIR')
+    self.AC_DIR = AC_DIR
     def get_filter(string: str):
       return data.get(string)
     self.options = options
@@ -69,7 +70,7 @@ class ModManager:
     }
 
   # Creates directory lists for each mod_category
-  def get_mods(self):
+  def get_installed_mods(self):
     # Adding mod categories to dict
     mods = {}
     for category in self.mod_categories:
@@ -249,30 +250,13 @@ class ModManager:
           progress_function(copied, to_copy)
     self.clean_temp_dir()
 
-  def search_mods(self, search_term: str):
-    # Getting mods dict
-    mods = self.get_mods()
-    marked_mods = {}
-    # Filtering out non matching mods
-    for category in mods:
-      if mods[category].get('enabled') is False:
-        continue
-      title = mods.get(category).get('title')
-      mod_list = mods.get(category).get('mod_list')
-      mod_basename = drawer.basename(mod_list)
-      mods_found = clipboard.search(mod_basename, search_term)
-      mods_found = clipboard.match_suffixes(mod_list, mods_found)
-      if mods_found == []:
-        continue
-      marked_mods[category] = {
-      'title': title,
-      'mod_list': mods_found
-      }
-    # Returning matching mods
-    return marked_mods
-
   def remove_mods(self, mods: dict):
     for category in mods:
       mod_list = mods.get(category).get('mod_list')
       for mod in mod_list:
-        drawer.trash(mod)
+        path = mods.get(category).get('mod_list').get(mod).get('path')
+        if path.startswith(self.AC_DIR) and (path.endswith(mod) or path.endswith(mod + '.ini')):
+          print(path)
+          drawer.trash(mod)
+        else:
+          print(f"Aborting unsafe deletion of mod '{mod}' at '{path}'.")
