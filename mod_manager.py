@@ -20,39 +20,27 @@ TEMP = f"{drawer.get_temp()}/accm"
 # Manages mods
 class ModManager:
 
-  def __init__(self, config: dict, options: dict):
-    AC_DIR = config.get('paths').get('AC_DIR')
+  def __init__(self, AC_DIR: str):
     self.AC_DIR = AC_DIR
-    def get_filter(string: str):
-      return data.get(string)
-    self.options = options
-    def get_option(opt: str):
-      return options.get(opt).get('enabled')
     # Defining mod categories
     self.mod_categories = {
       "cars": {'title':         "Cars",        'directory': f'{AC_DIR}/content/cars',
-      'filter_list': get_filter('kunos_cars'), 'enabled': get_option('car'),
-      'find_function': mod_finder.find_cars},
+      'filter_list': data.kunos_cars,  'find_function': mod_finder.find_cars},
 
       "tracks": {'title':       "Tracks",        'directory': f'{AC_DIR}/content/tracks',
-      'filter_list': get_filter('kunos_tracks'), 'enabled': get_option('track'),
-      'find_function': mod_finder.find_tracks},
+      'filter_list': data.kunos_tracks, 'find_function': mod_finder.find_tracks},
 
       "python_apps": {'title':   "Python apps", 'directory': f'{AC_DIR}/apps/python',
-      'filter_list': get_filter('kunos_apps'),  'enabled': get_option('python'),
-      'find_function': mod_finder.find_python_apps},
+      'filter_list': data.kunos_apps, 'find_function': mod_finder.find_python_apps},
 
       "lua_apps": {'title':   "Lua apps", 'directory': f'{AC_DIR}/apps/lua',
-      'filter_list': [],            'enabled': get_option('lua'),
-      'find_function': mod_finder.find_lua_apps},
+      'filter_list': [], 'find_function': mod_finder.find_lua_apps},
 
       "ppfilters": {'title':    "PP Filters",       'directory': f'{AC_DIR}/system/cfg/ppfilters',
-      'filter_list': get_filter('kunos_ppfilters'), 'enabled': get_option('ppfilter'),
-      'find_function': mod_finder.find_ppfilters},
+      'filter_list': data.kunos_ppfilters, 'find_function': mod_finder.find_ppfilters},
 
       "weather": {'title':    "Weather",          'directory': f'{AC_DIR}/content/weather',
-      'filter_list': get_filter('kunos_weather'), 'enabled': get_option('weather'),
-      'find_function': mod_finder.find_weather},
+      'filter_list': data.kunos_weather, 'find_function': mod_finder.find_weather},
     }
 
     self.meta_categories = {
@@ -74,9 +62,6 @@ class ModManager:
     # Adding mod categories to dict
     mods = {}
     for category in self.mod_categories:
-      enabled = self.mod_categories.get(category).get('enabled')
-      if enabled is False:
-        continue
       directory = self.mod_categories.get(category).get('directory')
       if drawer.is_folder(directory) is False:
         continue
@@ -86,17 +71,14 @@ class ModManager:
       mod_dict = {}
       for item in drawer.get_all(directory):
         mod_id = drawer.basename(item).removesuffix('.ini')
-        if self.options.get('kunos').get('enabled'):
-          if (mod_id in filter_list) == False:
-            continue
-        else:
-          if self.options.get('all').get('enabled') is False and (mod_id in filter_list):
-            continue
-        mod_dict[mod_id] = {'path': item, 'filesize': drawer.get_file_size(item)}
+        filesize = drawer.get_file_size(item)
+        mod_dict[mod_id] = {'path': item, 'type': 'mod', 'filesize': filesize}
+        if (mod_id in filter_list) == True:
+          mod_dict[mod_id]['type'] = 'kunos'
       # Removing `readme_weather.txt` from list
       if clipboard.is_string_in_list(mod_dict, 'readme_weather.txt'):
         mod_dict.pop('readme_weather.txt')
-      # Adding additional details
+      # Additional details
       filesize = 0
       for mod_id in mod_dict:
         mod_path = mod_dict.get(mod_id).get('path')
