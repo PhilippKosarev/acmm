@@ -107,6 +107,7 @@ class ModManager:
         # Adding preview
         ui_preview = f"{mod_path}/ui/preview.png"
         if drawer.is_file(ui_preview): mod_dict[mod_id]['preview'] = ui_preview
+        else: mod_dict[mod_id]['preview'] = None
         # Adding badge
         badge = f"{mod_path}/ui/badge.png"
         if drawer.is_file(badge): mod_dict[mod_id]['badge'] = badge
@@ -118,7 +119,7 @@ class ModManager:
         # Addings skins
         skins = self.get_skins(mod_path)
         mod_dict[mod_id]['skins'] = skins
-        if mod_dict[mod_id]['preview'] is None
+        if mod_dict[mod_id]['preview'] is None:
           try:
             first_skin = next(iter(skins))
             mod_dict[mod_id]['preview'] = skins.get(first_skin).get('preview')
