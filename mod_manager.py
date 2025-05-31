@@ -113,10 +113,22 @@ class ModManager:
         if drawer.is_file(outline): mod_dict[mod_id]['outline'] = outline
         else: mod_dict[mod_id]['outline'] = None
         # Addings skins
-        mod_dict[mod_id]['skins'] = self.get_skins(mod_path)
+        skins = self.get_skins(mod_path)
+        mod_dict[mod_id]['skins'] = skins
+        try:
+          first_skin = next(iter(skins))
+          mod_dict[mod_id]['preview'] = skins.get(first_skin).get('preview')
+        except:
+            mod_dict[mod_id]['preview'] = None
         # Adding layouts
-        layouts_dir = f"{mod_path}/ui"
-        mod_dict[mod_id]['layouts'] = self.get_layouts(mod_path)
+        layouts = self.get_layouts(mod_path)
+        mod_dict[mod_id]['layouts'] = layouts
+        if mod_dict[mod_id]['preview'] is None:
+          try:
+            first_layout = next(iter(layouts))
+            mod_dict[mod_id]['preview'] = layouts.get(first_layout).get('preview')
+          except:
+            mod_dict[mod_id]['preview'] = None
       mods[category] = {'title': title, 'mod_list': mod_dict}
     return mods
 
