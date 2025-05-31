@@ -64,6 +64,8 @@ class ModManager:
     for category in self.mod_categories:
       directory = self.mod_categories.get(category).get('directory')
       if drawer.is_folder(directory) is False:
+        print(f"Mod folder at '{directory}' does not exist.")
+        mods[category] = None
         continue
       title = self.mod_categories.get(category).get('title')
       filter_list = self.mod_categories.get(category).get('filter_list')
