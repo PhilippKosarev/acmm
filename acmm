@@ -73,7 +73,6 @@ class CLI:
 
     for path in paths:
       # Pre processing (extracting archive, copying files)
-      typewriter.print_status("Computing file size...")
       size = round((drawer.get_file_size(path) / 1_000_000_000), 1)
       if size > 10:
         print(f"Specified mod(s) weigh {size}GB, installing it might take a while. ")
@@ -151,19 +150,17 @@ class CLI:
     for category in mods:
       title = mods.get(category).get('title')
       mod_list = mods.get(category).get('mod_list')
-      self.print_mod_category(title, mod_list)
+      filesize = mods.get(category).get('filesize')
+      self.print_mod_category(title, mod_list, filesize)
 
-  def print_mod_category(self, title: str, mod_list: dict):
-    size = 0
-    for mod_id in mod_list:
-      size += drawer.get_file_size(mod_list.get(mod_id).get('path'))
-    size = round((size / 1_000_000_000), 1)
+  def print_mod_category(self, title: str, mod_list: dict, filesize: int):
     entries = len(mod_list)
+    filesize = round((filesize / 1_000_000_000), 1)
     # Quitting if there's nothing to print
     if entries == 0:
       return
     # Printing
-    print(f"{typewriter.bolden(title)}: ( {entries} | {size}GB )")
+    print(f"{typewriter.bolden(title)}: ( {entries} | {filesize}GB )")
     mods_columns = typewriter.list_to_columns(mod_list, None, 2)
     print(f"{mods_columns}")
 

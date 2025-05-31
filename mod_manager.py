@@ -92,13 +92,16 @@ class ModManager:
         else:
           if self.options.get('all').get('enabled') is False and (mod_id in filter_list):
             continue
-        mod_dict[mod_id] = {'path': item}
+        mod_dict[mod_id] = {'path': item, 'filesize': drawer.get_file_size(item)}
       # Removing `readme_weather.txt` from list
       if clipboard.is_string_in_list(mod_dict, 'readme_weather.txt'):
         mod_dict.pop('readme_weather.txt')
       # Adding additional details
+      filesize = 0
       for mod_id in mod_dict:
         mod_path = mod_dict.get(mod_id).get('path')
+        mod_filesize = mod_dict.get(mod_id).get('filesize')
+        filesize += mod_filesize
         # Adding ui info
         ui_car = f"{mod_path}/ui/ui_car.json"
         if drawer.is_file(ui_car): mod_dict[mod_id] = mod_dict.get(mod_id) | self.safe_read(ui_car)
@@ -134,7 +137,7 @@ class ModManager:
             mod_dict[mod_id]['preview'] = layouts.get(first_layout).get('preview')
           except:
             mod_dict[mod_id]['preview'] = None
-      mods[category] = {'title': title, 'mod_list': mod_dict}
+      mods[category] = {'title': title, 'mod_list': mod_dict, 'filesize': filesize}
     return mods
 
   def safe_read(self, json_file: str):
