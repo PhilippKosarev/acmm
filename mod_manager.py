@@ -104,6 +104,9 @@ class ModManager:
         if drawer.is_file(ui_car): mod_dict[mod_id] = mod_dict.get(mod_id) | self.safe_read(ui_car)
         ui_track = f"{mod_path}/ui/ui_track.json"
         if drawer.is_file(ui_track): mod_dict[mod_id] = mod_dict.get(mod_id) | self.safe_read(ui_track)
+        # Adding preview
+        ui_preview = f"{mod_path}/ui/preview.png"
+        if drawer.is_file(ui_preview): mod_dict[mod_id]['preview'] = ui_preview
         # Adding badge
         badge = f"{mod_path}/ui/badge.png"
         if drawer.is_file(badge): mod_dict[mod_id]['badge'] = badge
@@ -115,11 +118,12 @@ class ModManager:
         # Addings skins
         skins = self.get_skins(mod_path)
         mod_dict[mod_id]['skins'] = skins
-        try:
-          first_skin = next(iter(skins))
-          mod_dict[mod_id]['preview'] = skins.get(first_skin).get('preview')
-        except:
-            mod_dict[mod_id]['preview'] = None
+        if mod_dict[mod_id]['preview'] is None
+          try:
+            first_skin = next(iter(skins))
+            mod_dict[mod_id]['preview'] = skins.get(first_skin).get('preview')
+          except:
+              mod_dict[mod_id]['preview'] = None
         # Adding layouts
         layouts = self.get_layouts(mod_path)
         mod_dict[mod_id]['layouts'] = layouts
