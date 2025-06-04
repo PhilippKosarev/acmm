@@ -80,48 +80,59 @@ class ModManager:
       # Removing `readme_weather.txt` from list
       if clipboard.is_string_in_list(mod_dict, 'readme_weather.txt'):
         mod_dict.pop('readme_weather.txt')
-      # Additional details
-      filesize = 0
+      # Adding details
+      category_filesize = 0
       for mod_id in mod_dict:
         mod_path = mod_dict.get(mod_id).get('path')
+        # Adding mod's
         mod_filesize = mod_dict.get(mod_id).get('filesize')
-        filesize += mod_filesize
+        category_filesize += mod_filesize
         # Adding ui info
-        ui_car = f"{mod_path}/ui/ui_car.json"
-        if drawer.is_file(ui_car): mod_dict[mod_id] = mod_dict.get(mod_id) | self.safe_read(ui_car)
-        ui_track = f"{mod_path}/ui/ui_track.json"
-        if drawer.is_file(ui_track): mod_dict[mod_id] = mod_dict.get(mod_id) | self.safe_read(ui_track)
-        # Adding preview
-        ui_preview = f"{mod_path}/ui/preview.png"
-        if drawer.is_file(ui_preview): mod_dict[mod_id]['preview'] = ui_preview
-        else: mod_dict[mod_id]['preview'] = None
-        # Adding badge
-        badge = f"{mod_path}/ui/badge.png"
-        if drawer.is_file(badge): mod_dict[mod_id]['badge'] = badge
-        else: mod_dict[mod_id]['badge'] = None
-        # Adding outline
-        outline = f"{mod_path}/ui/outline.png"
-        if drawer.is_file(outline): mod_dict[mod_id]['outline'] = outline
-        else: mod_dict[mod_id]['outline'] = None
-        # Addings skins
-        skins = self.get_skins(mod_path)
-        mod_dict[mod_id]['skins'] = skins
-        if mod_dict[mod_id]['preview'] is None:
-          try:
-            first_skin = next(iter(skins))
-            mod_dict[mod_id]['preview'] = skins.get(first_skin).get('preview')
-          except:
-              mod_dict[mod_id]['preview'] = None
-        # Adding layouts
-        layouts = self.get_layouts(mod_path)
-        mod_dict[mod_id]['layouts'] = layouts
-        if mod_dict[mod_id]['preview'] is None:
-          try:
-            first_layout = next(iter(layouts))
-            mod_dict[mod_id]['preview'] = layouts.get(first_layout).get('preview')
-          except:
-            mod_dict[mod_id]['preview'] = None
-      mods[category] = {'title': title, 'mod_list': mod_dict, 'filesize': filesize}
+        ui_files = [
+          'ui/dlc_ui_car.json', 'ui/ui_car.json',
+          'ui/dlc_ui_track.json', 'ui/ui_track.json'
+        ]
+        for file in ui_files:
+          filepath = f"{mod_path}/{file}"
+          if drawer.is_file(filepath):
+            mod_dict[mod_id] = mod_dict.get(mod_id) | self.safe_read(filepath)
+            break
+        image_files = {
+          'preview': 'ui/preview.png',
+          'badge': 'ui/badge.png',
+          'outline': 'ui/outline.png',
+        }
+        # Adding images
+        for item in image_files:
+          file = f"{mod_path}/{image_files.get(item)}"
+          if drawer.is_file(file):
+            mod_dict[mod_id][item] = file
+          else:
+            mod_dict[mod_id][item] = None
+        # Addings skins/layouts
+        mod_dict[mod_id]['skins'] = self.get_skins(mod_path)
+        mod_dict[mod_id]['layouts'] = self.get_layouts(mod_path)
+        # Getting the important values, even if they are only in the skin/layout info
+        important_properties = ['country', 'year', 'preview']
+        dicts_to_look_in = ['skins', 'layouts']
+        for important_property in important_properties:
+          if (important_property in mod_dict.get(mod_id)):
+            continue
+          for prop in dicts_to_look_in:
+            if (prop in mod_dict.get(mod_id)) is False:
+              continue
+            if (mod_dict.get(mod_id).get(prop) is None):
+              continue
+            first_item = next(iter(mod_dict.get(mod_id).get(prop)))
+            first_item = mod_dict.get(mod_id).get(prop).get(first_item)
+            if (important_property in first_item) is False:
+              continue
+            if (important_property in first_item):
+              mod_dict[mod_id][important_property] = first_item.get(important_property)
+            else:
+              mod_dict[mod_id][important_property] = None
+        # Adding country
+      mods[category] = {'title': title, 'mod_list': mod_dict, 'filesize': category_filesize}
     return mods
 
   def safe_read(self, json_file: str):
@@ -153,6 +164,8 @@ class ModManager:
         skins[skin_id]['livery'] = livery
     # Sorting skins by priority
     # Sorting skins by priority, if present
+    if len(skins) == 0:
+      return None
     skins = self.sort_by_priority(skins)
     return skins
 
@@ -171,6 +184,8 @@ class ModManager:
       preview = f"{folder}/preview.png"
       if drawer.is_file(preview):
         layouts[layout_id]['preview'] = preview
+    if len(layouts) == 0:
+      return None
     layouts = self.sort_by_priority(layouts)
     return layouts
 
