@@ -97,18 +97,16 @@ class ModManager:
           if drawer.is_file(filepath):
             mod_dict[mod_id] = mod_dict.get(mod_id) | self.safe_read(filepath)
             break
+        # Adding images
         image_files = {
           'preview': 'ui/preview.png',
           'badge': 'ui/badge.png',
           'outline': 'ui/outline.png',
         }
-        # Adding images
         for item in image_files:
           file = f"{mod_path}/{image_files.get(item)}"
           if drawer.is_file(file):
             mod_dict[mod_id][item] = file
-          else:
-            mod_dict[mod_id][item] = None
         # Addings skins/layouts
         mod_dict[mod_id]['skins'] = self.get_skins(mod_path)
         mod_dict[mod_id]['layouts'] = self.get_layouts(mod_path)
@@ -129,8 +127,6 @@ class ModManager:
               continue
             if (important_property in first_item):
               mod_dict[mod_id][important_property] = first_item.get(important_property)
-            else:
-              mod_dict[mod_id][important_property] = None
         # Adding country
       mods[category] = {'title': title, 'mod_list': mod_dict, 'filesize': category_filesize}
     return mods
