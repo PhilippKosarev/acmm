@@ -111,7 +111,7 @@ class ModManager:
         mod_dict[mod_id]['skins'] = self.get_skins(mod_path)
         mod_dict[mod_id]['layouts'] = self.get_layouts(mod_path)
         # Getting the important values, even if they are only in the skin/layout info
-        important_properties = ['country', 'year', 'preview']
+        important_properties = ['country', 'year', 'preview', 'name', 'description']
         dicts_to_look_in = ['skins', 'layouts']
         for important_property in important_properties:
           if (important_property in mod_dict.get(mod_id)):
