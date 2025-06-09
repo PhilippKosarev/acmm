@@ -102,6 +102,7 @@ class ModManager:
           'preview': 'ui/preview.png',
           'badge': 'ui/badge.png',
           'outline': 'ui/outline.png',
+          'preview': 'preview.jpg',
         }
         for item in image_files:
           file = f"{mod_path}/{image_files.get(item)}"
