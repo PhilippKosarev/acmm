@@ -133,6 +133,10 @@ class ModManager:
           if country is None or country == '':
             continue
           country = country.replace('.', '')
+          flag = f"{self.AC_DIR}/content/gui/NationFlags/{country}.png"
+          if drawer.is_file(flag):
+             mod_dict[mod_id]['flag'] = flag
+             continue
           country = pycountry.countries.get(name=country)
           if country is None:
             continue
