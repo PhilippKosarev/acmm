@@ -153,6 +153,12 @@ class ModManager:
             mod_dict[mod_id] = mod_dict.get(mod_id) | weather_info.get('LAUNCHER')
           if ('__LAUNCHER_CM' in weather_info):
             mod_dict[mod_id] = mod_dict.get(mod_id) | weather_info.get('__LAUNCHER_CM')
+        # Getting PP filter info
+        if mod_path.endswith('.ini'):
+          filter_info = notebook.read_ini(mod_path, True)
+          if ('ABOUT' in filter_info):
+            mod_dict[mod_id] = mod_dict.get(mod_id) | filter_info.get('ABOUT')
+      # Adding category to mods
       mods[category] = {'title': title, 'mod_list': mod_dict, 'filesize': category_filesize}
     return mods
 
