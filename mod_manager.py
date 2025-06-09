@@ -17,32 +17,32 @@ mod_finder = ModFinder()
 # Getting important paths
 TEMP = f"{drawer.get_temp()}/accm"
 
+# Defining mod categories
+mod_categories = {
+  "cars": {'title':         "Cars",        'directory': 'content/cars',
+  'filter_list': data.kunos_cars,  'find_function': mod_finder.find_cars},
+
+  "tracks": {'title':       "Tracks",        'directory': 'content/tracks',
+  'filter_list': data.kunos_tracks, 'find_function': mod_finder.find_tracks},
+
+  "python_apps": {'title':   "Python apps", 'directory': 'apps/python',
+  'filter_list': data.kunos_apps, 'find_function': mod_finder.find_python_apps},
+
+  "lua_apps": {'title':   "Lua apps", 'directory': 'apps/lua',
+  'filter_list': [], 'find_function': mod_finder.find_lua_apps},
+
+  "ppfilters": {'title':    "PP Filters",       'directory': 'system/cfg/ppfilters',
+  'filter_list': data.kunos_ppfilters, 'find_function': mod_finder.find_ppfilters},
+
+  "weather": {'title':    "Weather",          'directory': 'content/weather',
+  'filter_list': data.kunos_weather, 'find_function': mod_finder.find_weather},
+}
+
 # Manages mods
 class ModManager:
 
   def __init__(self, AC_DIR: str):
     self.AC_DIR = drawer.absolute_path(AC_DIR)
-    # Defining mod categories
-    self.mod_categories = {
-      "cars": {'title':         "Cars",        'directory': f'{AC_DIR}/content/cars',
-      'filter_list': data.kunos_cars,  'find_function': mod_finder.find_cars},
-
-      "tracks": {'title':       "Tracks",        'directory': f'{AC_DIR}/content/tracks',
-      'filter_list': data.kunos_tracks, 'find_function': mod_finder.find_tracks},
-
-      "python_apps": {'title':   "Python apps", 'directory': f'{AC_DIR}/apps/python',
-      'filter_list': data.kunos_apps, 'find_function': mod_finder.find_python_apps},
-
-      "lua_apps": {'title':   "Lua apps", 'directory': f'{AC_DIR}/apps/lua',
-      'filter_list': [], 'find_function': mod_finder.find_lua_apps},
-
-      "ppfilters": {'title':    "PP Filters",       'directory': f'{AC_DIR}/system/cfg/ppfilters',
-      'filter_list': data.kunos_ppfilters, 'find_function': mod_finder.find_ppfilters},
-
-      "weather": {'title':    "Weather",          'directory': f'{AC_DIR}/content/weather',
-      'filter_list': data.kunos_weather, 'find_function': mod_finder.find_weather},
-    }
-
     self.meta_categories = {
       'car_skins': {'title': "Car skins", 'directory': f"{AC_DIR}/content/cars",
       'find_function': mod_finder.find_car_skins, 'keep_old': True},
@@ -61,14 +61,15 @@ class ModManager:
   def get_installed_mods(self):
     # Adding mod categories to dict
     mods = {}
-    for category in self.mod_categories:
-      directory = self.mod_categories.get(category).get('directory')
+    for category in mod_categories:
+      directory = mod_categories.get(category).get('directory')
+      directory = f"{self.AC_DIR}/{directory}"
       if drawer.is_folder(directory) is False:
         print(f"Mod folder at '{directory}' does not exist.")
         mods[category] = None
         continue
-      title = self.mod_categories.get(category).get('title')
-      filter_list = self.mod_categories.get(category).get('filter_list')
+      title = mod_categories.get(category).get('title')
+      filter_list = mod_categories.get(category).get('filter_list')
       # Getting and filtering mod files
       mod_dict = {}
       for item in drawer.get_all(directory):
@@ -90,7 +91,8 @@ class ModManager:
         # Adding ui info
         ui_files = [
           'ui/dlc_ui_car.json', 'ui/ui_car.json',
-          'ui/dlc_ui_track.json', 'ui/ui_track.json'
+          'ui/dlc_ui_track.json', 'ui/ui_track.json',
+          'ui/ui_app.json',
         ]
         for file in ui_files:
           filepath = f"{mod_path}/{file}"
@@ -158,6 +160,12 @@ class ModManager:
           filter_info = notebook.read_ini(mod_path, True)
           if ('ABOUT' in filter_info):
             mod_dict[mod_id] = mod_dict.get(mod_id) | filter_info.get('ABOUT')
+        # Adding lua app info
+        manifest_file = f"{mod_path}/manifest.ini"
+        if drawer.is_file(manifest_file):
+          app_info = notebook.read_ini(manifest_file, True, True)
+          if ('ABOUT' in app_info):
+            mod_dict[mod_id] = mod_dict.get(mod_id) | app_info.get('ABOUT')
       # Adding category to mods
       mods[category] = {'title': title, 'mod_list': mod_dict, 'filesize': category_filesize}
     return mods
@@ -229,13 +237,13 @@ class ModManager:
   # Finding mods in given folder
   def find_mods(self):
     mods = {}
-    for category in self.mod_categories:
-      enabled = self.mod_categories.get(category).get('enabled')
+    for category in mod_categories:
+      enabled = mod_categories.get(category).get('enabled')
       if enabled is False:
         continue
-      title = self.mod_categories.get(category).get('title')
-      install_location = self.mod_categories.get(category).get('directory')
-      find_function = self.mod_categories.get(category).get('find_function')
+      title = mod_categories.get(category).get('title')
+      install_location = mod_categories.get(category).get('directory')
+      find_function = mod_categories.get(category).get('find_function')
       mod_finder = ModFinder()
       folders = drawer.get_folders(TEMP)
       mod_list = []
