@@ -21,7 +21,7 @@ TEMP = f"{drawer.get_temp()}/accm"
 class ModManager:
 
   def __init__(self, AC_DIR: str):
-    self.AC_DIR = AC_DIR
+    self.AC_DIR = drawer.absolute_path(AC_DIR)
     # Defining mod categories
     self.mod_categories = {
       "cars": {'title':         "Cars",        'directory': f'{AC_DIR}/content/cars',
