@@ -272,7 +272,7 @@ class ModManager:
     self.clean_temp_dir()
 
   def remove_mod(self, mod_id: str, mod_info: dict):
-    path = mod_info.get('path')
+    path = drawer.absolute_path(mod_info.get('path'))
     if drawer.exists(path) is False:
       print(f"Mod '{mod_id}' at '{path}' does not exist.")
       return 1
