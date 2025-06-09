@@ -1,5 +1,5 @@
 # Imports
-import sys
+import sys, pycountry
 
 # Jamming imports
 from libjam import Drawer, Clipboard, Notebook, Flashcard
@@ -127,7 +127,19 @@ class ModManager:
               continue
             if (important_property in first_item):
               mod_dict[mod_id][important_property] = first_item.get(important_property)
-        # Adding country
+        # Getting country flag
+        if ('country' in mod_dict.get(mod_id)):
+          country = mod_dict.get(mod_id).get('country').strip()
+          if country is None or country == '':
+            continue
+          country = country.replace('.', '')
+          country = pycountry.countries.get(name=country)
+          if country is None:
+            continue
+          iso_3166 = country.alpha_3
+          flag = f"{self.AC_DIR}/content/gui/NationFlags/{iso_3166}.png"
+          if drawer.is_file(flag):
+             mod_dict[mod_id]['flag'] = flag
       mods[category] = {'title': title, 'mod_list': mod_dict, 'filesize': category_filesize}
     return mods
 
