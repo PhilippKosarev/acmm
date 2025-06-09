@@ -144,6 +144,14 @@ class ModManager:
           flag = f"{self.AC_DIR}/content/gui/NationFlags/{iso_3166}.png"
           if drawer.is_file(flag):
              mod_dict[mod_id]['flag'] = flag
+        # Getting weather info
+        weather_file = f"{mod_path}/weather.ini"
+        if drawer.is_file(weather_file):
+          weather_info = notebook.read_ini(weather_file, True)
+          if ('LAUNCHER' in weather_info):
+            mod_dict[mod_id] = mod_dict.get(mod_id) | weather_info.get('LAUNCHER')
+          if ('__LAUNCHER_CM' in weather_info):
+            mod_dict[mod_id] = mod_dict.get(mod_id) | weather_info.get('__LAUNCHER_CM')
       mods[category] = {'title': title, 'mod_list': mod_dict, 'filesize': category_filesize}
     return mods
 
