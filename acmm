@@ -52,7 +52,7 @@ elif AC_DIR.endswith(assettocorsa) is False:
 Currently specified AC directory:\n{AC_DIR}''')
   sys.exit(-1)
 
-# The command line interface functions
+# The command line interface for acmm
 class CLI:
   def __init__(self, options = None):
     self.options = options
@@ -120,7 +120,7 @@ class CLI:
         sys.exit(-1)
 
     # Searching for mods
-    typewriter.print_status("Searching for mods...")
+    typewriter.print_status('Searching for mods...')
     mods = mod_manager.find_mods()
     meta_mods = mod_manager.find_meta_mods()
     # Joining metamods
