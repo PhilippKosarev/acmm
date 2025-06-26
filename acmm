@@ -15,6 +15,8 @@ notebook = Notebook()
 flashcard = Flashcard()
 
 # Internal imports
+from mod_fetcher import ModFetcher
+mod_fetcher = ModFetcher()
 from mod_manager import ModManager
 from data import Data
 
@@ -52,41 +54,42 @@ elif AC_DIR.endswith(assettocorsa) is False:
 Currently specified AC directory:\n{AC_DIR}''')
   sys.exit(-1)
 
+mod_categories = {
+  'cars': {'title': 'Cars',            'get_function': mod_fetcher.get_cars},
+  'tracks': {'title': 'Tracks',        'get_function': mod_fetcher.get_tracks},
+  'ppfilters': {'title': 'PP Filters', 'get_function': mod_fetcher.get_ppfilters},
+  'apps': {'title': 'Apps',            'get_function': mod_fetcher.get_apps},
+  'weather': {'title': 'Weather',      'get_function': mod_fetcher.get_weather},
+}
+
 # The command line interface for acmm
 class CLI:
   def __init__(self, options = None):
     self.options = options
 
-  # Interface to list installed mods
+  # List installed mods
   def list(self):
     typewriter.print_status('Getting installed mods...')
-    mods = mod_manager.get_installed_mods()
-    # Removing filtered out categories
-    filtered_out_categories = []
-    for category in mods:
-      if category in self.options:
-        if self.options.get(category).get('enabled') is False:
-          filtered_out_categories.append(category)
-    for category in filtered_out_categories:
-      mods.pop(category)
-    # Filtering out mods/kunos/none
-    for category in mods:
-      filtered_out_mods = []
-      category_info = mods.get(category)
-      mod_list = category_info.get('mod_list')
-      for mod_id in mod_list:
-        mod_type = mod_list.get(mod_id).get('type')
-        def get_opt(opt): return self.options.get(opt).get('enabled')
-        if (
-          (get_opt('kunos') and mod_type != 'kunos') or
-          (get_opt('all') is False and mod_type == 'kunos' and
-          get_opt('kunos') is False)
-        ):
-          filtered_out_mods.append(mod_id)
-      for mod_id in filtered_out_mods:
-        mods[category]['mod_list'].pop(mod_id)
-    # Printing
-    self.print_mod_categories(mods)
+    for mod_category in mod_categories:
+      enabled = self.options.get(mod_category).get('enabled')
+      if enabled is False:
+        continue
+      mod_category = mod_categories.get(mod_category)
+      title = mod_category.get('title')
+      get_function = mod_category.get('get_function')
+      assets = get_function(AC_DIR, ['size'])
+      opt_kunos = self.options.get('kunos').get('enabled')
+      opt_all = self.options.get('all').get('enabled')
+      if opt_kunos is False and opt_all is False:
+        mods = assets.get('mod')
+      elif opt_kunos is True and opt_all is False:
+        mods = assets.get('kunos') | assets.get('dlc')
+      else:
+        mods = assets.get('kunos') | assets.get('dlc') | assets.get('mod')
+      size = 0
+      for mod_id in mods:
+        size += mods.get(mod_id).get('size')
+      self.print_mod_category(title, mods, size)
 
   # Interface to install mods
   def install(self, path: str, *args):
@@ -182,8 +185,8 @@ class CLI:
       self.print_mod_category(title, mod_list, filesize)
 
   def print_mod_category(self, title: str, mod_list: dict, filesize: int):
-    entries = len(mod_list)
     filesize = round((filesize / 1_000_000_000), 1)
+    entries = len(mod_list)
     # Quitting if there's nothing to print
     if entries == 0:
       return
@@ -210,30 +213,27 @@ commands = {
 }
 options = {
   'cars':      {'long': ['car', 'cars'],           'short': ['c'],
-  'description': 'Only list|install|remove cars'},
+  'description': 'Only list/remove cars'},
 
   'tracks':    {'long': ['track', 'tracks'],       'short': ['t'],
-  'description': 'Only list|install|remove tracks'},
+  'description': 'Only list/remove tracks'},
 
   'ppfilters': {'long': ['ppfilter', 'ppfilters'], 'short': ['f'],
-  'description': 'Only list|install|remove PP filters'},
+  'description': 'Only list/remove PP filters'},
 
-  'weather': {'long': ['weather'],                'short': ['w'],
-  'description': 'Only list|install|remove weather'},
+  'weather': {'long': ['weather'],                 'short': ['w'],
+  'description': 'Only list/remove weather'},
 
-  'python_apps':  {'long': ['py', 'python'],           'short': ['p'],
-  'description': 'Only list|install|remove python apps'},
+  'apps':  {'long': ['app', 'apps'],               'short': ['a'],
+  'description': 'Only list/remove apps'},
 
-  'lua_apps':  {'long': ['lua'],                       'short': ['l'],
-  'description': 'Only list|install|remove lua apps'},
-
-  'all':      {'long': ['all'],                   'short': ['a'],
+  'all':      {'long': ['all'],                    'short': ['A'],
   'description': 'Do not filter out Kunos assets'},
 
-  'kunos':    {'long': ['kunos'],                 'short': ['k'],
+  'kunos':    {'long': ['kunos'],                  'short': ['k'],
   'description': 'Filter out non Kunos assets'},
 }
-filter_options = ['cars', 'tracks', 'ppfilters', 'weather', 'python_apps', 'lua_apps']
+filter_options = ['cars', 'tracks', 'ppfilters', 'weather', 'apps']
 
 
 # Parsing user input

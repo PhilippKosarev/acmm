@@ -29,19 +29,6 @@ def get_flag(country: str):
   else:
     return None
 
-def get_weighed(assets: dict):
-  global_size = 0
-  for origin in assets:
-    origin_size = 0
-    asset_list = assets.get(origin)
-    for mod_id in asset_list:
-      mod_size = asset_list.get(mod_id).get('size')
-      origin_size += mod_size
-      global_size += mod_size
-    assets[origin]['size'] = origin_size
-  assets['size'] = global_size
-  return assets
-
 def get_origin(mod_id, mod_path, kunos_assets, json_filename: str):
   if mod_id in kunos_assets:
     mod_files = drawer.basename(drawer.get_files(mod_path))
@@ -189,9 +176,6 @@ class ModFetcher:
         mod_info['skins'] = get_skins(mod_path, include)
       # Adding car to dict
       cars[origin][mod_id] = mod_info
-    # Adding category-wide info
-    if 'size' in include:
-      cars = get_weighed(cars)
     return cars
 
 
@@ -235,9 +219,6 @@ class ModFetcher:
       # TODO: add layout info
       # Adding track to dict
       tracks[origin][mod_id] = mod_info
-    # Adding category-wide info
-    if 'size' in include:
-      tracks = get_weighed(tracks)
     # Returning fetched tracks
     return tracks
 
@@ -246,7 +227,7 @@ class ModFetcher:
   # Available 'include' options:
   # ui, icon, size
   def get_apps(self, AC_DIR, include: list = []):
-    apps = {'kunos': {}, 'mod': {}}
+    apps = {'kunos': {}, 'dlc': {}, 'mod': {}}
     folders = drawer.get_folders(f'{AC_DIR}/apps/python') + drawer.get_folders(f'{AC_DIR}/apps/lua')
     for mod_path in folders:
       # Establishing basic mod properties
@@ -272,9 +253,6 @@ class ModFetcher:
         mod_info['icon'] = get_existing(image_file)
       # Adding track to dict
       apps[origin][mod_id] = mod_info
-    # Adding category-wide info
-    if 'size' in include:
-      apps = get_weighed(apps)
     # Returning fetched apps
     return apps
 
@@ -283,7 +261,7 @@ class ModFetcher:
   # Available 'include' options:
   # ui, size
   def get_ppfilters(self, AC_DIR, include: list = []):
-    ppfilters = {'kunos': {}, 'mod': {}}
+    ppfilters = {'kunos': {}, 'dlc': {}, 'mod': {}}
     files = drawer.get_files(f'{AC_DIR}/system/cfg/ppfilters')
     for mod_path in files:
       # Establishing basic mod properties
@@ -304,9 +282,6 @@ class ModFetcher:
         mod_info.update(ui_info)
       # Adding ppfilter to dict
       ppfilters[origin][mod_id] = mod_info
-    # Adding category-wide info
-    if 'size' in include:
-      ppfilters = get_weighed(ppfilters)
     # Returning fetched ppfilters
     return ppfilters
 
@@ -315,7 +290,7 @@ class ModFetcher:
   # Available 'include' options:
   # ui, preview, size
   def get_weather(self, AC_DIR, include: list = []):
-    weather = {'kunos': {}, 'mod': {}}
+    weather = {'kunos': {}, 'dlc': {}, 'mod': {}}
     folders = drawer.get_folders(f'{AC_DIR}/content/weather')
     for mod_path in folders:
       # Establishing basic mod properties
@@ -340,8 +315,5 @@ class ModFetcher:
         mod_info['preview'] = get_existing(image_file)
       # Adding ppfilter to dict
       weather[origin][mod_id] = mod_info
-    # Adding category-wide info
-    if 'size' in include:
-      weather = get_weighed(weather)
     # Returning fetched weather
     return weather
