@@ -1,7 +1,7 @@
 #! /usr/bin/python
 
 # Imports
-import sys, os
+import sys, os, time
 
 # Jam imports
 from libjam import Captain, Drawer, Typewriter, Clipboard, Notebook, Flashcard
@@ -55,11 +55,11 @@ Currently specified AC directory:\n{AC_DIR}''')
   sys.exit(-1)
 
 mod_categories = {
-  'cars': {'title': 'Cars',            'get_function': mod_fetcher.get_cars},
-  'tracks': {'title': 'Tracks',        'get_function': mod_fetcher.get_tracks},
+  'cars':      {'title': 'Cars',       'get_function': mod_fetcher.get_cars},
+  'tracks':    {'title': 'Tracks',     'get_function': mod_fetcher.get_tracks},
   'ppfilters': {'title': 'PP Filters', 'get_function': mod_fetcher.get_ppfilters},
-  'apps': {'title': 'Apps',            'get_function': mod_fetcher.get_apps},
-  'weather': {'title': 'Weather',      'get_function': mod_fetcher.get_weather},
+  'apps':      {'title': 'Apps',       'get_function': mod_fetcher.get_apps},
+  'weather':   {'title': 'Weather',    'get_function': mod_fetcher.get_weather},
 }
 
 # The command line interface for acmm
@@ -67,16 +67,17 @@ class CLI:
   def __init__(self, options = None):
     self.options = options
 
-  # List installed mods
-  def list(self):
-    typewriter.print_status('Getting installed mods...')
+  def get_mods(self):
+    typewriter.print_status('Fetching installed mods...')
+    return_dict = {}
+    start_time = time.time()
     for mod_category in mod_categories:
       enabled = self.options.get(mod_category).get('enabled')
       if enabled is False:
         continue
-      mod_category = mod_categories.get(mod_category)
-      title = mod_category.get('title')
-      get_function = mod_category.get('get_function')
+      return_dict[mod_category] = mod_categories.get(mod_category)
+      category_info = mod_categories.get(mod_category)
+      get_function = category_info.get('get_function')
       assets = get_function(AC_DIR, ['size'])
       opt_kunos = self.options.get('kunos').get('enabled')
       opt_all = self.options.get('all').get('enabled')
@@ -89,7 +90,24 @@ class CLI:
       size = 0
       for mod_id in mods:
         size += mods.get(mod_id).get('size')
-      self.print_mod_category(title, mods, size)
+      return_dict[mod_category]['mods'] = mods
+    end_time = time.time()
+    elapsed = end_time - start_time
+    typewriter.print(f"Fetched installed mods in {round(elapsed, 2)}s.")
+    return return_dict
+
+  def get_category_size(self, mod_category: dict):
+    mods = mod_category.get('mods')
+    size = 0
+    for mod_id in mods:
+      size += mods.get(mod_id).get('size')
+    return size
+
+  # List installed mods
+  def list(self):
+    mod_categories = self.get_mods()
+    self.print_mod_categories(mod_categories)
+
 
   # Interface to install mods
   def install(self, path: str, *args):
@@ -147,42 +165,67 @@ class CLI:
 
   # Interface to remove mods
   def remove(self, search_term: str):
-    mods = mod_manager.get_installed_mods()
+    mod_categories = self.get_mods()
     # Removing non matching mods
-    for category in mods:
+    for category in mod_categories:
       non_matching = []
-      mod_list = mods.get(category).get('mod_list')
-      for mod_id in mod_list:
+      mods = mod_categories.get(category).get('mods')
+      for mod_id in mods:
         if (search_term in mod_id) == False:
           non_matching.append(mod_id)
       for mod_id in non_matching:
-        mods[category]['mod_list'].pop(mod_id)
+        mods.pop(mod_id)
     # Removing empty categories
     empty_categories = []
-    for category in mods:
-      mod_list = mods.get(category).get('mod_list')
-      if len(mod_list) == 0:
+    for category in mod_categories:
+      mods = mod_categories.get(category).get('mods')
+      if len(mods) == 0:
         empty_categories.append(category)
     for category in empty_categories:
-      mods.pop(category)
+      mod_categories.pop(category)
     # Checking if any match
-    if mods == {}:
+    if len(mod_categories) == 0:
       print(f"No mods found matching '{search_term}'.")
-      sys.exit(0)
-    self.print_mod_categories(mods)
-    if flashcard.yn_prompt('Remove the listed mods?'):
-      mod_manager.remove_mods(mods)
-      print('Deleted.')
+      return
+    self.print_mod_categories(mod_categories)
+    if flashcard.yn_prompt('Remove the listed mods?') is False:
+      print('Deletion aborted.')
+      return
+    marked_mods = {}
+    for category in mod_categories:
+      category_info = mod_categories.get(category)
+      mods = category_info.get('mods')
+      for mod_id in mods:
+        mod_info = mods.get(mod_id)
+        marked_mods[mod_id] = mod_info
+    num_of_mods = len(marked_mods)
+    if num_of_mods > 1:
+      delay = 1 / num_of_mods
     else:
-      print('Deletion cancelled.')
+      delay = 0.3
+    last_deleted = None
+    for mod_id in marked_mods:
+      mod_info = marked_mods.get(mod_id)
+      try:
+        typewriter.print_status(f"Deleting '{mod_id}'...")
+        mod_path = mod_info.get('path')
+        time.sleep(delay)
+        drawer.trash(mod_path)
+        last_deleted = mod_id
+      except KeyboardInterrupt:
+        typewriter.print('Deletion aborted.')
+        typewriter.print(f"Last deleted: '{last_deleted}'.")
+        exit()
+    typewriter.print(f"Deleted {num_of_mods} mods.")
 
   # Helper functions
-  def print_mod_categories(self, mods):
-    for category in mods:
-      title = mods.get(category).get('title')
-      mod_list = mods.get(category).get('mod_list')
-      filesize = mods.get(category).get('filesize')
-      self.print_mod_category(title, mod_list, filesize)
+  def print_mod_categories(self, mod_categories):
+    for category in mod_categories:
+      category_info = mod_categories.get(category)
+      title = category_info.get('title')
+      mods = category_info.get('mods')
+      size = self.get_category_size(category_info)
+      self.print_mod_category(title, mods, size)
 
   def print_mod_category(self, title: str, mod_list: dict, filesize: int):
     filesize = round((filesize / 1_000_000_000), 1)
