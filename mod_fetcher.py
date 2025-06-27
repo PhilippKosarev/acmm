@@ -50,34 +50,30 @@ def get_ui_info(mod_path, origin, json_filename):
     return {}
 
 def get_app_info(mod_path: str, lang: str):
-  if lang == 'python':
-    json_file = f"{mod_path}/ui/ui_app.json"
-    ui_info = notebook.read_json(json_file)
-  elif lang == 'lua':
-    manifest = f"{mod_path}/manifest.ini"
-    ui_info = notebook.read_ini(manifest).get('ABOUT')
-  if ui_info is None:
-    return {}
-  else:
+  try:
+    if lang == 'python':
+      json_file = f"{mod_path}/ui/ui_app.json"
+      ui_info = notebook.read_json(json_file)
+    elif lang == 'lua':
+      manifest = f"{mod_path}/manifest.ini"
+      try:
+        ui_info = notebook.read_ini(manifest).get('ABOUT')
+      except AttributeError:
+        return {}
     return ui_info
+  except FileNotFoundError:
+    return {}
 
 def get_ppfilter_info(mod_path: str):
   ui_info = notebook.read_ini(mod_path)
-  if ui_info is None:
-    return {}
   if 'ABOUT' in ui_info:
-    ui_info = ui_info.get('ABOUT')
+    return ui_info.get('ABOUT')
   else:
-    ui_info = None
-  if ui_info is None:
     return {}
-  else:
-    return ui_info
 
 def get_weather_info(mod_path: str):
-  ui_info = notebook.read_ini(mod_path)
-  if ui_info is None:
-    return {}
+  ini_file = f"{mod_path}/weather.ini"
+  ui_info = notebook.read_ini(ini_file)
   if 'LAUNCHER' in ui_info:
     launcher_info = ui_info.get('LAUNCHER')
   else:
@@ -86,7 +82,7 @@ def get_weather_info(mod_path: str):
     cm_info = ui_info.get('__LAUNCHER_CM')
   else:
     cm_info = {}
-  ui_info = launcher_info.update(cm_info)
+  ui_info = launcher_info | cm_info
   return ui_info
 
 

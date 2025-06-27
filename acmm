@@ -236,7 +236,7 @@ class CLI:
     # Printing
     typewriter.print(f"{typewriter.bolden(title)}: ( {entries} | {filesize}GB )")
     mods_columns = typewriter.list_to_columns(mod_list, None, 2)
-    typewriter.print(f"{mods_columns}")
+    typewriter.print(f"{mods_columns}\n")
 
 cli = CLI()
 
