@@ -263,7 +263,7 @@ class ModFetcher:
     files = drawer.get_files(f'{AC_DIR}/system/cfg/ppfilters')
     for mod_path in files:
       # Establishing basic mod properties
-      mod_id = drawer.basename(mod_path)
+      mod_id = drawer.basename(mod_path).removesuffix('.ini')
       mod_info = {'path': mod_path}
       # Getting ppfilter origin
       if mod_id in data.kunos_ppfilters:
