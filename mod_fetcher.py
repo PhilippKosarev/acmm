@@ -17,13 +17,15 @@ def get_existing(path: str):
   else:
     return None
 
-def get_flag(country: str):
+def get_flag(AC_DIR, country: str):
+  if country is None:
+    return None
   country = country.replace('.', '').strip()
   country = pycountry.countries.get(name=country)
   if country is None:
     return None
   iso_3166 = country.alpha_3
-  flag = f"{self.AC_DIR}/content/gui/NationFlags/{iso_3166}.png"
+  flag = f"{AC_DIR}/content/gui/NationFlags/{iso_3166}.png"
   if drawer.is_file(flag):
      return flag
   else:
@@ -151,7 +153,7 @@ class ModFetcher:
         # Getting country flag
         if 'flag' in include:
           if 'country' in ui_info:
-            ui_info['flag'] = get_flag(ui_info.get('country'))
+            ui_info['flag'] = get_flag(AC_DIR, ui_info.get('country'))
         mod_info.update(ui_info)
       ## Getting badge
       if 'badge' in include:
@@ -197,7 +199,7 @@ class ModFetcher:
         # Getting country flag
         if 'flag' in include:
           if 'country' in ui_info:
-            ui_info['flag'] = get_flag(ui_info.get('country'))
+            ui_info['flag'] = get_flag(AC_DIR, ui_info.get('country'))
         mod_info.update(ui_info)
       ## Getting outline
       if 'outline' in include:
