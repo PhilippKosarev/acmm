@@ -20,18 +20,9 @@ ACMM allows you to automatically install:
 It's also able to fully, and automatically, install SOL.
 
 ## How to run ACMM
-Installing the dependencies:
 ```
 pip install libjam
-```
-
-Cloning the repo:
-```
 git clone 'https://github.com/PhilippKosarev/acmm'
-```
-
-Running the CLI front-end:
-```
 cd acmm
 ./acmm
 ```
