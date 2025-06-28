@@ -93,6 +93,7 @@ def get_skins(mod_path, include):
   if drawer.is_folder(folder) is False:
     return None
   skin_dirs = drawer.get_folders(folder)
+  skin_dirs.sort()
   skins = {}
   for skin_path in skin_dirs:
     # Adding basic skin information
@@ -137,6 +138,7 @@ class ModFetcher:
   def get_cars(self, AC_DIR, include: list = []):
     cars = {'kunos': {}, 'dlc': {}, 'mod': {}}
     folders = drawer.get_folders(f'{AC_DIR}/content/cars')
+    folders.sort()
     for mod_path in folders:
       # Establishing basic mod properties
       mod_id = drawer.basename(mod_path)
@@ -183,6 +185,7 @@ class ModFetcher:
   def get_tracks(self, AC_DIR, include: list = []):
     tracks = {'kunos': {}, 'dlc': {}, 'mod': {}}
     folders = drawer.get_folders(f'{AC_DIR}/content/tracks')
+    folders.sort()
     for mod_path in folders:
       # Establishing basic mod properties
       mod_id = drawer.basename(mod_path)
@@ -227,6 +230,7 @@ class ModFetcher:
   def get_apps(self, AC_DIR, include: list = []):
     apps = {'kunos': {}, 'dlc': {}, 'mod': {}}
     folders = drawer.get_folders(f'{AC_DIR}/apps/python') + drawer.get_folders(f'{AC_DIR}/apps/lua')
+    folders.sort()
     for mod_path in folders:
       # Establishing basic mod properties
       mod_id = drawer.basename(mod_path)
@@ -259,13 +263,16 @@ class ModFetcher:
   def get_ppfilters(self, AC_DIR, include: list = []):
     ppfilters = {'kunos': {}, 'dlc': {}, 'mod': {}}
     files = drawer.get_files(f'{AC_DIR}/system/cfg/ppfilters')
+    files.sort()
     for mod_path in files:
       # Establishing basic mod properties
       mod_id = drawer.basename(mod_path).removesuffix('.ini')
       mod_info = {'path': mod_path}
       # Getting ppfilter origin
-      if mod_id in data.kunos_ppfilters: origin = 'kunos'
-      else:                              origin = 'mod'
+      if mod_id in data.kunos_ppfilters:
+        origin = 'kunos'
+      else:
+        origin = 'mod'
       # Getting optional information
       ## Getting filesize info
       if 'size' in include: mod_info['size'] = drawer.get_filesize(mod_path)
@@ -283,6 +290,7 @@ class ModFetcher:
   def get_weather(self, AC_DIR, include: list = []):
     weather = {'kunos': {}, 'dlc': {}, 'mod': {}}
     folders = drawer.get_folders(f'{AC_DIR}/content/weather')
+    files.sort()
     for mod_path in folders:
       # Establishing basic mod properties
       mod_id = drawer.basename(mod_path)

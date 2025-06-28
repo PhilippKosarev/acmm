@@ -19,7 +19,6 @@ from mod_fetcher import ModFetcher
 mod_fetcher = ModFetcher()
 from mod_manager import ModManager
 from data import Data
-
 data = Data()
 
 # Handling config
