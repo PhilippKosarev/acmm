@@ -54,6 +54,8 @@ elif AC_DIR.endswith(assettocorsa) is False:
 Currently specified AC directory:\n{AC_DIR}''')
   sys.exit(-1)
 
+mod_manager = ModManager(AC_DIR)
+
 mod_categories = {
   'cars':      {'title': 'Cars',       'get_function': mod_fetcher.get_cars},
   'tracks':    {'title': 'Tracks',     'get_function': mod_fetcher.get_tracks},
@@ -64,23 +66,20 @@ mod_categories = {
 
 # The command line interface for acmm
 class CLI:
-  def __init__(self, options = None):
-    self.options = options
-
   def get_mods(self):
     typewriter.print_status('Fetching installed mods...')
     return_dict = {}
     start_time = time.time()
     for mod_category in mod_categories:
-      enabled = self.options.get(mod_category).get('enabled')
+      enabled = options.get(mod_category).get('enabled')
       if enabled is False:
         continue
       return_dict[mod_category] = mod_categories.get(mod_category)
       category_info = mod_categories.get(mod_category)
       get_function = category_info.get('get_function')
       assets = get_function(AC_DIR, ['size'])
-      opt_kunos = self.options.get('kunos').get('enabled')
-      opt_all = self.options.get('all').get('enabled')
+      opt_kunos = options.get('kunos').get('enabled')
+      opt_all = options.get('all').get('enabled')
       if opt_kunos is False and opt_all is False:
         mods = assets.get('mod')
       elif opt_kunos is True and opt_all is False:
@@ -238,20 +237,18 @@ class CLI:
     mods_columns = typewriter.list_to_columns(mod_list, None, 2)
     typewriter.print(f"{mods_columns}\n")
 
-cli = CLI()
-
 # Inputs/Commands/Options configuration
 app = "acmm"
 description = "A mod manager for Assetto Corsa"
 # help = "" # If you wish to set your own help page text
 commands = {
-  'list':     {'function': cli.list,
+  'list':     {'function': CLI.list,
   'description': 'Lists installed mods'},
 
-  'install':  {'function': cli.install,
+  'install':  {'function': CLI.install,
   'description': 'Installs the specified mod'},
 
-  'remove':   {'function': cli.remove,
+  'remove':   {'function': CLI.remove,
   'description': 'Removes specified mods'},
 }
 options = {
@@ -264,30 +261,27 @@ options = {
   'ppfilters': {'long': ['ppfilter', 'ppfilters'], 'short': ['f'],
   'description': 'Only list/remove PP filters'},
 
-  'weather': {'long': ['weather'],                 'short': ['w'],
+  'weather':   {'long': ['weather'],               'short': ['w'],
   'description': 'Only list/remove weather'},
 
-  'apps':  {'long': ['app', 'apps'],               'short': ['a'],
+  'apps':      {'long': ['app', 'apps'],           'short': ['a'],
   'description': 'Only list/remove apps'},
 
-  'all':      {'long': ['all'],                    'short': ['A'],
+  'all':       {'long': ['all'],                   'short': ['A'],
   'description': 'Do not filter out Kunos assets'},
 
-  'kunos':    {'long': ['kunos'],                  'short': ['k'],
+  'kunos':     {'long': ['kunos'],                 'short': ['k'],
   'description': 'Filter out non Kunos assets'},
 }
-filter_options = ['cars', 'tracks', 'ppfilters', 'weather', 'apps']
-
+help = captain.generate_help(app, description, commands, options)
 
 # Parsing user input
-arguments = sys.argv
-arguments.remove(arguments[0])
-help = captain.generate_help(app, description, commands, options)
-interpretation = captain.interpret(app, help, commands, arguments, options)
+interpretation = captain.interpret(app, help, commands, options)
 function = interpretation.get('function')
 options = interpretation.get('options')
 
 # Enabling all filters if none are active
+filter_options = ['cars', 'tracks', 'ppfilters', 'weather', 'apps']
 disabled_filters = 0
 for filter_option in filter_options:
   if options.get(filter_option).get('enabled') is False:
@@ -296,8 +290,5 @@ if disabled_filters == len(filter_options):
   for filter_option in filter_options:
     options[filter_option]['enabled'] = True
 
-# Passing options to mod_manager
-mod_manager = ModManager(AC_DIR)
-
 # Executing function
-exec(f"CLI(options).{function}")
+exec(f"CLI().{function}")
