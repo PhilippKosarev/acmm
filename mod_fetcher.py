@@ -150,11 +150,11 @@ class ModFetcher:
       ## Getting UI info
       if 'ui' in include:
         ui_info = get_ui_info(mod_path, origin, 'ui_car.json')
+        mod_info['ui'] = ui_info
         # Getting country flag
         if 'flag' in include:
           if 'country' in ui_info:
-            ui_info['flag'] = get_flag(AC_DIR, ui_info.get('country'))
-        mod_info.update(ui_info)
+            mod_info['flag'] = get_flag(AC_DIR, ui_info.get('country'))
       ## Getting badge
       if 'badge' in include:
         image_file = f"{mod_path}/ui/badge.png"
@@ -196,11 +196,11 @@ class ModFetcher:
       ## Getting UI info
       if 'ui' in include:
         ui_info = get_ui_info(mod_path, origin, 'ui_track.json')
+        mod_info['ui'] = ui_info
         # Getting country flag
         if 'flag' in include:
           if 'country' in ui_info:
-            ui_info['flag'] = get_flag(AC_DIR, ui_info.get('country'))
-        mod_info.update(ui_info)
+            mod_info['flag'] = get_flag(AC_DIR, ui_info.get('country'))
       ## Getting outline
       if 'outline' in include:
         image_file = f"{mod_path}/ui/outline.png"
@@ -242,9 +242,7 @@ class ModFetcher:
       if 'size' in include:
         mod_info['size'] = drawer.get_file_size(mod_path)
       ## Getting UI info
-      if 'ui' in include:
-        ui_info = get_app_info(mod_path, lang)
-        mod_info.update(ui_info)
+      if 'ui' in include: mod_info['ui'] = get_app_info(mod_path, lang)
       ## Getting icon
       if 'icon' in include:
         image_file = f"{mod_path}/icon.png"
@@ -266,18 +264,13 @@ class ModFetcher:
       mod_id = drawer.basename(mod_path).removesuffix('.ini')
       mod_info = {'path': mod_path}
       # Getting ppfilter origin
-      if mod_id in data.kunos_ppfilters:
-        origin = 'kunos'
-      else:
-        origin = 'mod'
+      if mod_id in data.kunos_ppfilters: origin = 'kunos'
+      else:                              origin = 'mod'
       # Getting optional information
       ## Getting filesize info
-      if 'size' in include:
-        mod_info['size'] = drawer.get_file_size(mod_path)
+      if 'size' in include: mod_info['size'] = drawer.get_file_size(mod_path)
       ## Getting UI info
-      if 'ui' in include:
-        ui_info = get_ppfilter_info(mod_path)
-        mod_info.update(ui_info)
+      if 'ui' in include: mod_info['ui'] = get_ppfilter_info(mod_path)
       # Adding ppfilter to dict
       ppfilters[origin][mod_id] = mod_info
     # Returning fetched ppfilters
@@ -305,8 +298,7 @@ class ModFetcher:
         mod_info['size'] = drawer.get_file_size(mod_path)
       ## Getting UI info
       if 'ui' in include:
-        ui_info = get_weather_info(mod_path)
-        mod_info.update(ui_info)
+        mod_info['ui'] = get_weather_info(mod_path)
       ## Getting preview
       if 'preview' in include:
         image_file = f"{mod_path}/preview.png"

@@ -1,2 +1,2 @@
 #!/bin/bash
-wc -l $(find ./ -name "*.py")
+wc -l $(ls -S ./ | grep '\.py')
