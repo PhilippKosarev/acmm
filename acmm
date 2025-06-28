@@ -227,13 +227,15 @@ class CLI:
       self.print_mod_category(title, mods, size)
 
   def print_mod_category(self, title: str, mod_list: dict, filesize: int):
-    filesize = round((filesize / 1_000_000_000), 1)
+    filesize = drawer.get_readable_filesize(filesize)
+    units = filesize[1].upper()
+    filesize = round(filesize[0], 1)
     entries = len(mod_list)
     # Quitting if there's nothing to print
     if entries == 0:
       return
     # Printing
-    typewriter.print(f"{typewriter.bolden(title)}: ( {entries} | {filesize}GB )")
+    typewriter.print(f"{typewriter.bolden(title)}: ( {entries} | {filesize} {units} )")
     mods_columns = typewriter.list_to_columns(mod_list, None, 2)
     typewriter.print(f"{mods_columns}\n")
 

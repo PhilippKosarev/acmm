@@ -146,7 +146,7 @@ class ModFetcher:
       # Getting optional information
       ## Getting filesize info
       if 'size' in include:
-        mod_info['size'] = drawer.get_file_size(mod_path)
+        mod_info['size'] = drawer.get_filesize(mod_path)
       ## Getting UI info
       if 'ui' in include:
         ui_info = get_ui_info(mod_path, origin, 'ui_car.json')
@@ -192,7 +192,7 @@ class ModFetcher:
       # Getting optional information
       ## Getting filesize info
       if 'size' in include:
-        mod_info['size'] = drawer.get_file_size(mod_path)
+        mod_info['size'] = drawer.get_filesize(mod_path)
       ## Getting UI info
       if 'ui' in include:
         ui_info = get_ui_info(mod_path, origin, 'ui_track.json')
@@ -240,7 +240,7 @@ class ModFetcher:
       # Getting optional information
       ## Getting filesize info
       if 'size' in include:
-        mod_info['size'] = drawer.get_file_size(mod_path)
+        mod_info['size'] = drawer.get_filesize(mod_path)
       ## Getting UI info
       if 'ui' in include: mod_info['ui'] = get_app_info(mod_path, lang)
       ## Getting icon
@@ -268,7 +268,7 @@ class ModFetcher:
       else:                              origin = 'mod'
       # Getting optional information
       ## Getting filesize info
-      if 'size' in include: mod_info['size'] = drawer.get_file_size(mod_path)
+      if 'size' in include: mod_info['size'] = drawer.get_filesize(mod_path)
       ## Getting UI info
       if 'ui' in include: mod_info['ui'] = get_ppfilter_info(mod_path)
       # Adding ppfilter to dict
@@ -295,7 +295,7 @@ class ModFetcher:
       # Getting optional information
       ## Getting filesize info
       if 'size' in include:
-        mod_info['size'] = drawer.get_file_size(mod_path)
+        mod_info['size'] = drawer.get_filesize(mod_path)
       ## Getting UI info
       if 'ui' in include:
         mod_info['ui'] = get_weather_info(mod_path)
