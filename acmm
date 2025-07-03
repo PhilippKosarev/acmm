@@ -56,11 +56,11 @@ Currently specified AC directory:\n{AC_DIR}''')
 mod_manager = ModManager(AC_DIR)
 
 mod_categories = {
-  'cars':      {'title': 'Cars',       'get_function': mod_fetcher.get_cars},
-  'tracks':    {'title': 'Tracks',     'get_function': mod_fetcher.get_tracks},
-  'ppfilters': {'title': 'PP Filters', 'get_function': mod_fetcher.get_ppfilters},
-  'apps':      {'title': 'Apps',       'get_function': mod_fetcher.get_apps},
-  'weather':   {'title': 'Weather',    'get_function': mod_fetcher.get_weather},
+  'cars':      {'title': 'Cars',       'get_function': mod_fetcher.fetch_cars},
+  'tracks':    {'title': 'Tracks',     'get_function': mod_fetcher.fetch_tracks},
+  'ppfilters': {'title': 'PP Filters', 'get_function': mod_fetcher.fetch_ppfilters},
+  'apps':      {'title': 'Apps',       'get_function': mod_fetcher.fetch_apps},
+  'weather':   {'title': 'Weather',    'get_function': mod_fetcher.fetch_weather},
 }
 
 # The command line interface for acmm

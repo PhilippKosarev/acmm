@@ -135,7 +135,7 @@ class ModFetcher:
   # Returns cars
   # Available 'include' options:
   # ui, flag, badge, preview, logo, skins, size
-  def get_cars(self, AC_DIR, include: list = []):
+  def fetch_cars(self, AC_DIR, include: list = []):
     cars = {'kunos': {}, 'dlc': {}, 'mod': {}}
     folders = drawer.get_folders(f'{AC_DIR}/content/cars')
     folders.sort()
@@ -182,7 +182,7 @@ class ModFetcher:
   # Returns tracks
   # Available 'include' options:
   # ui, flag, outline, preview, skins, size
-  def get_tracks(self, AC_DIR, include: list = []):
+  def fetch_tracks(self, AC_DIR, include: list = []):
     tracks = {'kunos': {}, 'dlc': {}, 'mod': {}}
     folders = drawer.get_folders(f'{AC_DIR}/content/tracks')
     folders.sort()
@@ -227,7 +227,7 @@ class ModFetcher:
   # Returns apps
   # Available 'include' options:
   # ui, icon, size
-  def get_apps(self, AC_DIR, include: list = []):
+  def fetch_apps(self, AC_DIR, include: list = []):
     apps = {'kunos': {}, 'dlc': {}, 'mod': {}}
     folders = drawer.get_folders(f'{AC_DIR}/apps/python') + drawer.get_folders(f'{AC_DIR}/apps/lua')
     folders.sort()
@@ -260,7 +260,7 @@ class ModFetcher:
   # Returns ppfilters
   # Available 'include' options:
   # ui, size
-  def get_ppfilters(self, AC_DIR, include: list = []):
+  def fetch_ppfilters(self, AC_DIR, include: list = []):
     ppfilters = {'kunos': {}, 'dlc': {}, 'mod': {}}
     files = drawer.get_files(f'{AC_DIR}/system/cfg/ppfilters')
     files.sort()
@@ -287,10 +287,10 @@ class ModFetcher:
   # Returns weather
   # Available 'include' options:
   # ui, preview, size
-  def get_weather(self, AC_DIR, include: list = []):
+  def fetch_weather(self, AC_DIR, include: list = []):
     weather = {'kunos': {}, 'dlc': {}, 'mod': {}}
     folders = drawer.get_folders(f'{AC_DIR}/content/weather')
-    files.sort()
+    folders.sort()
     for mod_path in folders:
       # Establishing basic mod properties
       mod_id = drawer.basename(mod_path)
