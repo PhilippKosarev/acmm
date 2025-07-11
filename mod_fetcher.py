@@ -51,7 +51,7 @@ def get_ui_info(mod_path, origin, json_filename):
   else:
     return {}
 
-def get_app_info(mod_path: str, lang: str):
+def get_app_ui(mod_path: str, lang: str):
   try:
     if lang == 'python':
       json_file = f"{mod_path}/ui/ui_app.json"
@@ -66,14 +66,14 @@ def get_app_info(mod_path: str, lang: str):
   except FileNotFoundError:
     return {}
 
-def get_ppfilter_info(mod_path: str):
+def get_ppfilter_ui(mod_path: str):
   ui_info = notebook.read_ini(mod_path)
   if 'ABOUT' in ui_info:
     return ui_info.get('ABOUT')
   else:
     return {}
 
-def get_weather_info(mod_path: str):
+def get_weather_ui(mod_path: str):
   ini_file = f"{mod_path}/weather.ini"
   ui_info = notebook.read_ini(ini_file)
   if 'LAUNCHER' in ui_info:
@@ -140,43 +140,47 @@ class ModFetcher:
     folders = drawer.get_folders(f'{AC_DIR}/content/cars')
     folders.sort()
     for mod_path in folders:
-      # Establishing basic mod properties
-      mod_id = drawer.basename(mod_path)
-      mod_info = {'path': mod_path}
-      # Getting car origin
-      origin = get_origin(mod_id, mod_path, data.kunos_cars, 'ui_car.json')
-      # Getting optional information
-      ## Getting filesize info
-      if 'size' in include:
-        mod_info['size'] = drawer.get_filesize(mod_path)
-      ## Getting UI info
-      if 'ui' in include:
-        ui_info = get_ui_info(mod_path, origin, 'ui_car.json')
-        mod_info['ui'] = ui_info
-        # Getting country flag
-        if 'flag' in include:
-          if 'country' in ui_info:
-            mod_info['flag'] = get_flag(AC_DIR, ui_info.get('country'))
-      ## Getting badge
-      if 'badge' in include:
-        image_file = f"{mod_path}/ui/badge.png"
-        mod_info['badge'] = get_existing(image_file)
-      ## Getting preview
-      if 'preview' in include:
-        if origin == 'dlc': image_file = 'dlc_preview.png'
-        else: image_file = 'preview.png'
-        image_file = f"{mod_path}/ui/{image_file}"
-        mod_info['preview'] = get_existing(image_file)
-      ## Getting logo
-      if 'logo' in include:
-        image_file = f"{mod_path}/logo.png"
-        mod_info['logo'] = get_existing(image_file)
-      ## Getting skins
-      if 'skins' in include:
-        mod_info['skins'] = get_skins(mod_path, include)
-      # Adding car to dict
+      mod_id, mod_info, origin = self.get_car_info(mod_path, include)
       cars[origin][mod_id] = mod_info
     return cars
+
+  def get_car_info(self, mod_path, include: list = []):
+    # Establishing basic mod properties
+    mod_id = drawer.basename(mod_path)
+    mod_info = {'path': mod_path}
+    # Getting car origin
+    origin = get_origin(mod_id, mod_path, data.kunos_cars, 'ui_car.json')
+    # Getting optional information
+    ## Getting filesize info
+    if 'size' in include:
+      mod_info['size'] = drawer.get_filesize(mod_path)
+    ## Getting UI info
+    if 'ui' in include:
+      ui_info = get_ui_info(mod_path, origin, 'ui_car.json')
+      mod_info['ui'] = ui_info
+      # Getting country flag
+      if 'flag' in include:
+        if 'country' in ui_info:
+          mod_info['flag'] = get_flag(AC_DIR, ui_info.get('country'))
+    ## Getting badge
+    if 'badge' in include:
+      image_file = f"{mod_path}/ui/badge.png"
+      mod_info['badge'] = get_existing(image_file)
+    ## Getting preview
+    if 'preview' in include:
+      if origin == 'dlc': image_file = 'dlc_preview.png'
+      else: image_file = 'preview.png'
+      image_file = f"{mod_path}/ui/{image_file}"
+      mod_info['preview'] = get_existing(image_file)
+    ## Getting logo
+    if 'logo' in include:
+      image_file = f"{mod_path}/logo.png"
+      mod_info['logo'] = get_existing(image_file)
+    ## Getting skins
+    if 'skins' in include:
+      mod_info['skins'] = get_skins(mod_path, include)
+    # Returning
+    return mod_id, mod_info, origin
 
 
   # Returns tracks
@@ -187,41 +191,44 @@ class ModFetcher:
     folders = drawer.get_folders(f'{AC_DIR}/content/tracks')
     folders.sort()
     for mod_path in folders:
-      # Establishing basic mod properties
-      mod_id = drawer.basename(mod_path)
-      mod_info = {'path': mod_path}
-      # Getting track origin
-      origin = get_origin(mod_id, mod_path, data.kunos_tracks, 'ui_track.json')
-      # Getting optional information
-      ## Getting filesize info
-      if 'size' in include:
-        mod_info['size'] = drawer.get_filesize(mod_path)
-      ## Getting UI info
-      if 'ui' in include:
-        ui_info = get_ui_info(mod_path, origin, 'ui_track.json')
-        mod_info['ui'] = ui_info
-        # Getting country flag
-        if 'flag' in include:
-          if 'country' in ui_info:
-            mod_info['flag'] = get_flag(AC_DIR, ui_info.get('country'))
-      ## Getting outline
-      if 'outline' in include:
-        image_file = f"{mod_path}/ui/outline.png"
-        mod_info['badge'] = get_existing(image_file)
-      ## Getting preview
-      if 'preview' in include:
-        if origin == 'dlc': image_file = 'dlc_preview.png'
-        else: image_file = 'preview.png'
-        image_file = f"{mod_path}/ui/{image_file}"
-        mod_info['preview'] = get_existing(image_file)
-      ## Getting skins
-      if 'skins' in include:
-        mod_info['skins'] = get_skins(mod_path, include)
-      # TODO: add layout info
-      # Adding track to dict
+      mod_id, mod_info, origin = self.get_track_info(mod_path, include)
       tracks[origin][mod_id] = mod_info
-    # Returning fetched tracks
     return tracks
+
+  def get_track_info(self, mod_path, include: list = []):
+    # Establishing basic mod properties
+    mod_id = drawer.basename(mod_path)
+    mod_info = {'path': mod_path}
+    # Getting track origin
+    origin = get_origin(mod_id, mod_path, data.kunos_tracks, 'ui_track.json')
+    # Getting optional information
+    ## Getting filesize info
+    if 'size' in include:
+      mod_info['size'] = drawer.get_filesize(mod_path)
+    ## Getting UI info
+    if 'ui' in include:
+      ui_info = get_ui_info(mod_path, origin, 'ui_track.json')
+      mod_info['ui'] = ui_info
+      # Getting country flag
+      if 'flag' in include:
+        if 'country' in ui_info:
+          mod_info['flag'] = get_flag(AC_DIR, ui_info.get('country'))
+    ## Getting outline
+    if 'outline' in include:
+      image_file = f"{mod_path}/ui/outline.png"
+      mod_info['badge'] = get_existing(image_file)
+    ## Getting preview
+    if 'preview' in include:
+      if origin == 'dlc': image_file = 'dlc_preview.png'
+      else: image_file = 'preview.png'
+      image_file = f"{mod_path}/ui/{image_file}"
+      mod_info['preview'] = get_existing(image_file)
+    ## Getting skins
+    if 'skins' in include:
+      mod_info['skins'] = get_skins(mod_path, include)
+    # TODO: add layout info
+    # Returning
+    return mod_id, mod_info, origin
 
 
   # Returns apps
@@ -232,29 +239,32 @@ class ModFetcher:
     folders = drawer.get_folders(f'{AC_DIR}/apps/python') + drawer.get_folders(f'{AC_DIR}/apps/lua')
     folders.sort()
     for mod_path in folders:
-      # Establishing basic mod properties
-      mod_id = drawer.basename(mod_path)
-      lang = drawer.basename(drawer.get_parent(mod_path))
-      mod_info = {'path': mod_path, 'lang': lang}
-      # Getting app origin
-      if (lang == 'python') and (mod_id in data.kunos_apps):
-        origin = 'kunos'
-      else:
-        origin = 'mod'
-      # Getting optional information
-      ## Getting filesize info
-      if 'size' in include:
-        mod_info['size'] = drawer.get_filesize(mod_path)
-      ## Getting UI info
-      if 'ui' in include: mod_info['ui'] = get_app_info(mod_path, lang)
-      ## Getting icon
-      if 'icon' in include:
-        image_file = f"{mod_path}/icon.png"
-        mod_info['icon'] = get_existing(image_file)
-      # Adding track to dict
+      mod_id, mod_info, origin = self.get_app_info(mod_path, include)
       apps[origin][mod_id] = mod_info
-    # Returning fetched apps
     return apps
+
+  def get_app_info(self, mod_path, include: list = []):
+    # Establishing basic mod properties
+    mod_id = drawer.basename(mod_path)
+    lang = drawer.basename(drawer.get_parent(mod_path))
+    mod_info = {'path': mod_path, 'lang': lang}
+    # Getting app origin
+    if (lang == 'python') and (mod_id in data.kunos_apps):
+      origin = 'kunos'
+    else:
+      origin = 'mod'
+    # Getting optional information
+    ## Getting filesize info
+    if 'size' in include:
+      mod_info['size'] = drawer.get_filesize(mod_path)
+    ## Getting UI info
+    if 'ui' in include: mod_info['ui'] = get_app_ui(mod_path, lang)
+    ## Getting icon
+    if 'icon' in include:
+      image_file = f"{mod_path}/icon.png"
+      mod_info['icon'] = get_existing(image_file)
+    # Returning
+    return mod_id, mod_info, origin
 
 
   # Returns ppfilters
@@ -265,23 +275,26 @@ class ModFetcher:
     files = drawer.get_files(f'{AC_DIR}/system/cfg/ppfilters')
     files.sort()
     for mod_path in files:
-      # Establishing basic mod properties
-      mod_id = drawer.basename(mod_path).removesuffix('.ini')
-      mod_info = {'path': mod_path}
-      # Getting ppfilter origin
-      if mod_id in data.kunos_ppfilters:
-        origin = 'kunos'
-      else:
-        origin = 'mod'
-      # Getting optional information
-      ## Getting filesize info
-      if 'size' in include: mod_info['size'] = drawer.get_filesize(mod_path)
-      ## Getting UI info
-      if 'ui' in include: mod_info['ui'] = get_ppfilter_info(mod_path)
-      # Adding ppfilter to dict
+      mod_id, mod_info, origin = self.get_ppfilter_info(mod_path, include)
       ppfilters[origin][mod_id] = mod_info
-    # Returning fetched ppfilters
     return ppfilters
+
+  def get_ppfilter_info(self, mod_path, include: list = []):
+    # Establishing basic mod properties
+    mod_id = drawer.basename(mod_path).removesuffix('.ini')
+    mod_info = {'path': mod_path}
+    # Getting ppfilter origin
+    if mod_id in data.kunos_ppfilters:
+      origin = 'kunos'
+    else:
+      origin = 'mod'
+    # Getting optional information
+    ## Getting filesize info
+    if 'size' in include: mod_info['size'] = drawer.get_filesize(mod_path)
+    ## Getting UI info
+    if 'ui' in include: mod_info['ui'] = get_ppfilter_ui(mod_path)
+    # Returning
+    return mod_id, mod_info, origin
 
 
   # Returns weather
@@ -292,26 +305,29 @@ class ModFetcher:
     folders = drawer.get_folders(f'{AC_DIR}/content/weather')
     folders.sort()
     for mod_path in folders:
-      # Establishing basic mod properties
-      mod_id = drawer.basename(mod_path)
-      mod_info = {'path': mod_path}
-      # Getting ppfilter origin
-      if mod_id in data.kunos_weather:
-        origin = 'kunos'
-      else:
-        origin = 'mod'
-      # Getting optional information
-      ## Getting filesize info
-      if 'size' in include:
-        mod_info['size'] = drawer.get_filesize(mod_path)
-      ## Getting UI info
-      if 'ui' in include:
-        mod_info['ui'] = get_weather_info(mod_path)
-      ## Getting preview
-      if 'preview' in include:
-        image_file = f"{mod_path}/preview.png"
-        mod_info['preview'] = get_existing(image_file)
-      # Adding ppfilter to dict
+      mod_id, mod_info, origin = self.get_ppfilter_info(mod_path, include)
       weather[origin][mod_id] = mod_info
-    # Returning fetched weather
     return weather
+
+  def get_weather_info(self, mod_path, include: list = []):
+    # Establishing basic mod properties
+    mod_id = drawer.basename(mod_path)
+    mod_info = {'path': mod_path}
+    # Getting ppfilter origin
+    if mod_id in data.kunos_weather:
+      origin = 'kunos'
+    else:
+      origin = 'mod'
+    # Getting optional information
+    ## Getting filesize info
+    if 'size' in include:
+      mod_info['size'] = drawer.get_filesize(mod_path)
+    ## Getting UI info
+    if 'ui' in include:
+      mod_info['ui'] = get_weather_ui(mod_path)
+    ## Getting preview
+    if 'preview' in include:
+      image_file = f"{mod_path}/preview.png"
+      mod_info['preview'] = get_existing(image_file)
+    # Returning
+    return mod_id, mod_info, origin
