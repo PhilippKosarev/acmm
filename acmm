@@ -2,7 +2,7 @@
 
 # Imports
 import sys, os, time
-from threading import Thread
+from multiprocessing import Process, SimpleQueue
 
 # Jam imports
 from libjam import Captain, Drawer, Typewriter, Clipboard, Notebook, Flashcard
@@ -80,30 +80,31 @@ class CLI:
     typewriter.print_status('Fetching installed mods...')
     start_time = time.time()
     result_dict = {}
+    queue = SimpleQueue()
     for mod_category in mod_categories:
       if options.get(mod_category).get('enabled') is False:
         continue
       category_info = mod_categories.get(mod_category)
       result_dict[mod_category] = category_info
-      def assign(mod_category, mods):
-        result_dict[mod_category]['mods'] = mods
-      thread = Thread(target=self.get_category_mods, args=(mod_category, category_info, assign))
-      result_dict[mod_category]['thread'] = thread
-      thread.start()
+      process = Process(target=self.get_category_mods, args=(mod_category, category_info, queue))
+      result_dict[mod_category]['process'] = process
+      process.start()
     for mod_category in result_dict:
-      thread = result_dict.get(mod_category).get('thread')
-      thread.join()
-      mods = result_dict.get(mod_category).get('mods')
-      size = 0
-      for mod_id in mods:
-        size += mods.get(mod_id).get('size')
-      result_dict[mod_category]['size'] = size
+      process = result_dict.get(mod_category).get('process')
+      return_info = queue.get()
+      mod_category = return_info[0]
+      result_dict[mod_category]['mods'] = return_info[1]
+      result_dict[mod_category]['size'] = return_info[2]
+    for mod_category in result_dict:
+      process.join()
+    queue.close()
     end_time = time.time()
     elapsed = end_time - start_time
     typewriter.print(f"Fetched installed mods in {round(elapsed, 2)}s.")
     return result_dict
 
-  def get_category_mods(self, mod_category: str, category_info: dict, assign_func):
+
+  def get_category_mods(self, mod_category: str, category_info: dict, queue):
     get_function = category_info.get('get_function')
     assets = get_function(AC_DIR, ['size'])
     opt_kunos = options.get('kunos').get('enabled')
@@ -114,7 +115,11 @@ class CLI:
       mods = assets.get('kunos') | assets.get('dlc')
     else:
       mods = assets.get('kunos') | assets.get('dlc') | assets.get('mod')
-    assign_func(mod_category, mods)
+    size = 0
+    for mod_id in mods:
+      size += mods.get(mod_id).get('size')
+    return_tuple = (mod_category, mods, size)
+    queue.put(return_tuple)
 
 
   # List installed mods
