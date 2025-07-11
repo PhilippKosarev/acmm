@@ -2,6 +2,7 @@
 
 # Imports
 import sys, os, time
+from threading import Thread
 
 # Jam imports
 from libjam import Captain, Drawer, Typewriter, Clipboard, Notebook, Flashcard
@@ -56,50 +57,65 @@ Currently specified AC directory:\n{AC_DIR}''')
 mod_manager = ModManager(AC_DIR)
 
 mod_categories = {
-  'cars':      {'title': 'Cars',       'get_function': mod_fetcher.fetch_cars},
-  'tracks':    {'title': 'Tracks',     'get_function': mod_fetcher.fetch_tracks},
-  'ppfilters': {'title': 'PP Filters', 'get_function': mod_fetcher.fetch_ppfilters},
-  'apps':      {'title': 'Apps',       'get_function': mod_fetcher.fetch_apps},
-  'weather':   {'title': 'Weather',    'get_function': mod_fetcher.fetch_weather},
+  'cars': {
+    'title': 'Cars', 'get_function': mod_fetcher.fetch_cars,
+  },
+  'tracks': {
+    'title': 'Tracks', 'get_function': mod_fetcher.fetch_tracks
+  },
+  'ppfilters': {
+    'title': 'PP Filters', 'get_function': mod_fetcher.fetch_ppfilters
+  },
+  'apps': {
+    'title': 'Apps', 'get_function': mod_fetcher.fetch_apps
+  },
+  'weather': {
+    'title': 'Weather', 'get_function': mod_fetcher.fetch_weather
+  },
 }
 
 # The command line interface for acmm
 class CLI:
   def get_mods(self):
     typewriter.print_status('Fetching installed mods...')
-    return_dict = {}
     start_time = time.time()
+    result_dict = {}
     for mod_category in mod_categories:
-      enabled = options.get(mod_category).get('enabled')
-      if enabled is False:
+      if options.get(mod_category).get('enabled') is False:
         continue
-      return_dict[mod_category] = mod_categories.get(mod_category)
       category_info = mod_categories.get(mod_category)
-      get_function = category_info.get('get_function')
-      assets = get_function(AC_DIR, ['size'])
-      opt_kunos = options.get('kunos').get('enabled')
-      opt_all = options.get('all').get('enabled')
-      if opt_kunos is False and opt_all is False:
-        mods = assets.get('mod')
-      elif opt_kunos is True and opt_all is False:
-        mods = assets.get('kunos') | assets.get('dlc')
-      else:
-        mods = assets.get('kunos') | assets.get('dlc') | assets.get('mod')
+      result_dict[mod_category] = category_info
+      def assign(mod_category, mods):
+        result_dict[mod_category]['mods'] = mods
+      thread = Thread(target=self.get_category_mods, args=(mod_category, category_info, assign))
+      result_dict[mod_category]['thread'] = thread
+      thread.start()
+    for mod_category in result_dict:
+      thread = result_dict.get(mod_category).get('thread')
+      thread.join()
+      mods = result_dict.get(mod_category).get('mods')
       size = 0
       for mod_id in mods:
         size += mods.get(mod_id).get('size')
-      return_dict[mod_category]['mods'] = mods
+      result_dict[mod_category]['size'] = size
     end_time = time.time()
     elapsed = end_time - start_time
     typewriter.print(f"Fetched installed mods in {round(elapsed, 2)}s.")
-    return return_dict
+    return result_dict
 
-  def get_category_size(self, mod_category: dict):
-    mods = mod_category.get('mods')
-    size = 0
-    for mod_id in mods:
-      size += mods.get(mod_id).get('size')
-    return size
+  def get_category_mods(self, mod_category: str, category_info: dict, assign_func):
+    get_function = category_info.get('get_function')
+    assets = get_function(AC_DIR, ['size'])
+    opt_kunos = options.get('kunos').get('enabled')
+    opt_all = options.get('all').get('enabled')
+    if opt_kunos is False and opt_all is False:
+      mods = assets.get('mod')
+    elif opt_kunos is True and opt_all is False:
+      mods = assets.get('kunos') | assets.get('dlc')
+    else:
+      mods = assets.get('kunos') | assets.get('dlc') | assets.get('mod')
+    assign_func(mod_category, mods)
+
 
   # List installed mods
   def list(self):
@@ -222,7 +238,7 @@ class CLI:
       category_info = mod_categories.get(category)
       title = category_info.get('title')
       mods = category_info.get('mods')
-      size = self.get_category_size(category_info)
+      size = category_info.get('size')
       self.print_mod_category(title, mods, size)
 
   def print_mod_category(self, title: str, mod_list: dict, filesize: int):
