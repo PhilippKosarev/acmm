@@ -1,19 +1,9 @@
-#! /usr/bin/python
+#!/usr/bin/env python3
 
 # Imports
 import sys, os, time
 from multiprocessing import Process, SimpleQueue
-
-# Jam imports
-from libjam import Captain, Drawer, Typewriter, Clipboard, Notebook, Flashcard
-
-# Jam classes
-captain = Captain()
-drawer = Drawer()
-typewriter = Typewriter()
-clipboard = Clipboard()
-notebook = Notebook()
-flashcard = Flashcard()
+from libjam import captain, drawer, typewriter, notebook, flashcard
 
 # Internal imports
 from mod_fetcher import ModFetcher
@@ -43,15 +33,15 @@ if AC_DIR == None:
       AC_DIR = directory
 # Checking AC_DIR
 if AC_DIR == None:
-  print(f"Assetto Corsa folder not found.\n\
-If Assetto Corsa is not installed in the default location, you might need to specify the path to '{assettocorsa}' in '{CONFIG_FILE}'.")
+  print(f"""Assetto Corsa folder not found.
+If Assetto Corsa is not installed in the default location, you might need to specify the path to '{assettocorsa}' in '{CONFIG_FILE}'.""")
   sys.exit(-1)
-elif drawer.is_folder(AC_DIR) is False:
-  print(f"Path to Assetto Corsa's folder specified in '{CONFIG_FILE}' does not exist.")
+elif not drawer.is_folder(AC_DIR):
+  print(f"""Path to Assetto Corsa's folder specified in '{CONFIG_FILE}' does not exist.""")
   sys.exit(-1)
-elif AC_DIR.endswith(assettocorsa) is False:
-  print(f'''Path to Assetto Corsa in '{CONFIG_FILE}' is incorrect. It should end with '{assettocorsa}'.)
-Currently specified AC directory:\n{AC_DIR}''')
+elif not AC_DIR.endswith(assettocorsa):
+  print(f"""Path to Assetto Corsa in '{CONFIG_FILE}' is incorrect. It should end with '{assettocorsa}'.
+Currently specified AC directory:\n{AC_DIR}""")
   sys.exit(-1)
 
 mod_manager = ModManager(AC_DIR)
@@ -141,7 +131,7 @@ class CLI:
 
     for path in paths:
       # Pre processing (extracting archive, copying files)
-      size = round((drawer.get_file_size(path) / 1_000_000_000), 1)
+      size = round((drawer.get_filesize(path) / 1_000_000_000), 1)
       if size > 10:
         print(f"Specified mod(s) weigh {size}GB, installing it might take a while. ")
         if flashcard.yn_prompt("Proceed anyway?") is False:
@@ -151,7 +141,7 @@ class CLI:
     mod_manager.clean_temp_dir()
     for path in paths:
       typewriter.print_status("Processing...")
-      basename = drawer.basename(path)
+      basename = drawer.get_basename(path)
       def print_extract_progress(done: int, todo: int):
         typewriter.print_progress(f"Extracting '{basename}'", done, todo)
       unpacked = mod_manager.extract_mod(path, progress_function=print_extract_progress)
@@ -173,7 +163,7 @@ class CLI:
     typewriter.print(typewriter.bolden("Mods found:"))
     self.print_mod_categories(mods)
     # Getting user input
-    if flashcard.yn_prompt("Install listed mods?") is False:
+    if not flashcard.yn_prompt("Install listed mods?"):
       print("Installation cancelled.")
       sys.exit(0)
     # Installing mods
@@ -190,7 +180,7 @@ class CLI:
       non_matching = []
       mods = mod_categories.get(category).get('mods')
       for mod_id in mods:
-        if (search_term in mod_id) == False:
+        if not search_term in mod_id:
           non_matching.append(mod_id)
       for mod_id in non_matching:
         mods.pop(mod_id)
@@ -229,7 +219,7 @@ class CLI:
         typewriter.print_status(f"Deleting '{mod_id}'...")
         mod_path = mod_info.get('path')
         time.sleep(delay)
-        drawer.trash(mod_path)
+        drawer.trash_path(mod_path)
         last_deleted = mod_id
       except KeyboardInterrupt:
         typewriter.print('Deletion aborted.')
@@ -247,15 +237,19 @@ class CLI:
       self.print_mod_category(title, mods, size)
 
   def print_mod_category(self, title: str, mod_list: dict, filesize: int):
-    filesize = drawer.get_readable_filesize(filesize)
-    units = filesize[1].upper()
-    filesize = round(filesize[0], 1)
+    if filesize is not None:
+      filesize = drawer.get_readable_filesize(filesize)
+      units = filesize[1].upper()
+      filesize = round(filesize[0], 1)
+      filesize_string = f"{filesize} {units}"
+    else:
+      filesize_string = "Unknown"
     entries = len(mod_list)
     # Quitting if there's nothing to print
     if entries == 0:
       return
     # Printing
-    typewriter.print(f"{typewriter.bolden(title)}: ( {entries} | {filesize} {units} )")
+    typewriter.print(f"{typewriter.bolden(title)}: ( {entries} | {filesize_string} )")
     mods_columns = typewriter.list_to_columns(mod_list, None, 2)
     typewriter.print(f"{mods_columns}\n")
 

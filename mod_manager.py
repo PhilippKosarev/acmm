@@ -2,11 +2,7 @@
 import sys, pycountry
 
 # Jamming imports
-from libjam import Drawer, Clipboard, Notebook, Flashcard
-drawer = Drawer()
-clipboard = Clipboard()
-notebook = Notebook()
-flashcard = Flashcard()
+from libjam import drawer, clipboard, notebook, flashcard
 
 # Internal imports
 from data import Data
@@ -19,23 +15,30 @@ TEMP = f"{drawer.get_temp()}/accm"
 
 # Defining mod categories
 mod_categories = {
-  "cars": {'title':         "Cars",        'directory': 'content/cars',
-  'filter_list': data.kunos_cars,  'find_function': mod_finder.find_cars},
-
-  "tracks": {'title':       "Tracks",        'directory': 'content/tracks',
-  'filter_list': data.kunos_tracks, 'find_function': mod_finder.find_tracks},
-
-  "python_apps": {'title':   "Python apps", 'directory': 'apps/python',
-  'filter_list': data.kunos_apps, 'find_function': mod_finder.find_python_apps},
-
-  "lua_apps": {'title':   "Lua apps", 'directory': 'apps/lua',
-  'filter_list': [], 'find_function': mod_finder.find_lua_apps},
-
-  "ppfilters": {'title':    "PP Filters",       'directory': 'system/cfg/ppfilters',
-  'filter_list': data.kunos_ppfilters, 'find_function': mod_finder.find_ppfilters},
-
-  "weather": {'title':    "Weather",          'directory': 'content/weather',
-  'filter_list': data.kunos_weather, 'find_function': mod_finder.find_weather},
+  "cars": {
+    'title': "Cars", 'directory': 'content/cars',
+    'filter_list': data.kunos_cars,  'find_function': mod_finder.find_cars,
+  },
+  "tracks": {
+    'title': "Tracks", 'directory': 'content/tracks',
+    'filter_list': data.kunos_tracks, 'find_function': mod_finder.find_tracks,
+  },
+  "python_apps": {
+    'title': "Python apps", 'directory': 'apps/python',
+    'filter_list': data.kunos_apps, 'find_function': mod_finder.find_python_apps,
+  },
+  "lua_apps": {
+    'title':   "Lua apps", 'directory': 'apps/lua',
+    'filter_list': [], 'find_function': mod_finder.find_lua_apps,
+  },
+  "ppfilters": {
+    'title': "PP Filters", 'directory': 'system/cfg/ppfilters',
+    'filter_list': data.kunos_ppfilters, 'find_function': mod_finder.find_ppfilters,
+  },
+  "weather": {
+    'title':    "Weather", 'directory': 'content/weather',
+    'filter_list': data.kunos_weather, 'find_function': mod_finder.find_weather,
+  },
 }
 
 # Manages mods
@@ -44,17 +47,22 @@ class ModManager:
   def __init__(self, AC_DIR: str):
     self.AC_DIR = drawer.absolute_path(AC_DIR)
     self.meta_categories = {
-      'car_skins': {'title': "Car skins", 'directory': f"{AC_DIR}/content/cars",
-      'find_function': mod_finder.find_car_skins, 'keep_old': True},
-
-      'track_additions': {'title': "Track add-ons", 'directory': f"{AC_DIR}/content/tracks",
-      'find_function': mod_finder.find_track_addons, 'keep_old': True},
-
-      'extensions': {'title': "Extensions", 'directory': f"{AC_DIR}/extension",
-      'find_function': mod_finder.find_extensions, 'keep_old': True},
-
-      'gui': {'title': "GUI", 'directory': f"{AC_DIR}/content/gui",
-      'find_function': mod_finder.find_gui, 'keep_old': True},
+      'car_skins': {
+        'title': "Car skins", 'directory': f"{AC_DIR}/content/cars",
+        'find_function': mod_finder.find_car_skins, 'keep_old': True,
+      },
+      'track_additions': {
+        'title': "Track add-ons", 'directory': f"{AC_DIR}/content/tracks",
+        'find_function': mod_finder.find_track_addons, 'keep_old': True,
+      },
+      'extensions': {
+        'title': "Extensions", 'directory': f"{AC_DIR}/extension",
+        'find_function': mod_finder.find_extensions, 'keep_old': True,
+      },
+      'gui': {
+        'title': "GUI", 'directory': f"{AC_DIR}/content/gui",
+        'find_function': mod_finder.find_gui, 'keep_old': True,
+      },
     }
 
   # Creates directory lists for each mod_category
@@ -73,8 +81,8 @@ class ModManager:
       # Getting and filtering mod files
       mod_dict = {}
       for item in drawer.get_all(directory):
-        mod_id = drawer.basename(item).removesuffix('.ini')
-        filesize = drawer.get_file_size(item)
+        mod_id = drawer.get_basename(item).removesuffix('.ini')
+        filesize = drawer.get_filesize(item)
         mod_dict[mod_id] = {'path': item, 'type': 'mod', 'filesize': filesize}
         if (mod_id in filter_list) == True:
           mod_dict[mod_id]['type'] = 'kunos'
@@ -180,7 +188,7 @@ class ModManager:
     if drawer.is_folder(skins_dir) is False: return None
     skins = {}
     for folder in drawer.get_folders(skins_dir):
-      skin_id = drawer.basename(folder)
+      skin_id = drawer.get_basename(folder)
       skins[skin_id] = {'path': folder}
       # Adding ui info
       ui_info = f"{folder}/ui_skin.json"
@@ -209,7 +217,7 @@ class ModManager:
     if drawer.is_folder(layouts_dir) is False: return None
     layouts = {}
     for folder in drawer.get_folders(layouts_dir):
-      layout_id = drawer.basename(folder)
+      layout_id = drawer.get_basename(folder)
       layouts[layout_id] = {'path': folder}
       # Adding ui json stuff
       ui_json = f"{folder}/ui_track.json"
@@ -280,10 +288,10 @@ class ModManager:
 
   def extract_mod(self, path: str, progress_function=None):
     if drawer.is_folder(path):
-      basename = drawer.basename(path)
+      basename = drawer.get_basename(path)
       path = drawer.copy(path, f"{TEMP}/{basename}")
       return path
-    elif drawer.is_archive(path):
+    elif drawer.is_archive_supported(path):
       path = drawer.extract_archive(path, TEMP, progress_function)
       return path
     else:
@@ -298,7 +306,7 @@ class ModManager:
       copied = 0
       to_copy = len(mod_list)
       for mod in mod_list:
-        basename = drawer.basename(mod)
+        basename = drawer.get_basename(mod)
         final_location = f"{install_location}/{basename}"
         if keep_old is not True and drawer.exists(final_location):
           drawer.trash(final_location)
@@ -314,10 +322,10 @@ class ModManager:
     path = drawer.absolute_path(mod_info.get('path'))
     if drawer.exists(path) is False:
       print(f"Mod '{mod_id}' at '{path}' does not exist.")
-      return 1
+      return
     if path.startswith(self.AC_DIR) and (path.endswith(mod_id) or path.endswith(mod_id + '.ini')):
       drawer.trash(path)
-      return 0
+      return
     else:
       print(f"Aborting unsafe deletion of mod '{mod_id}' at '{path}'.")
 

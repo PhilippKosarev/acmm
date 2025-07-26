@@ -1,19 +1,14 @@
-# Imports
-from libjam import Drawer
-
-drawer = Drawer()
-
-HOME = drawer.get_home()
-
 class Data:
 
   def __init__(self):
     # Paths
     ## Likely AC_DIR locations
     self.ac_path_suffix = "steamapps/common/assettocorsa"
-    self.likely_ac_dirs = [f"{HOME}/.local/share/Steam/{self.ac_path_suffix}",
-    f"{HOME}/.var/app/com.valvesoftware.Steam/data/Steam/{self.ac_path_suffix}",
-    f"C:/Program Files (x86)/Steam/{self.ac_path_suffix}"]
+    self.likely_ac_dirs = [
+      f"~/.local/share/Steam/{self.ac_path_suffix}",
+      f"~/.var/app/com.valvesoftware.Steam/data/Steam/{self.ac_path_suffix}",
+      f"C:/Program Files (x86)/Steam/{self.ac_path_suffix}",
+    ]
 
     # Filters
     ## Kunos cars

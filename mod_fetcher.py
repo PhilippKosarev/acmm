@@ -1,23 +1,28 @@
 # Imports
 import pycountry
-
-# Jamming
-from libjam import Drawer, Notebook
-drawer = Drawer()
-notebook = Notebook()
-
+from libjam import drawer, notebook
 # Internal imports
 from data import Data
 data = Data()
 
 # Helper functions
+def get_folders_sorted(path: str) -> list:
+  folders = drawer.get_folders(path)
+  folders.sort()
+  return folders
+
+def get_files_sorted(path: str) -> list:
+  files = drawer.get_files(path)
+  files.sort()
+  return files
+
 def get_existing(path: str):
   if drawer.exists(path):
     return path
   else:
     return None
 
-def get_flag(AC_DIR, country: str):
+def get_flag(AC_DIR: str, country: str) -> str:
   if country is None:
     return None
   country = country.replace('.', '').strip()
@@ -28,12 +33,12 @@ def get_flag(AC_DIR, country: str):
   flag = f"{AC_DIR}/content/gui/NationFlags/{iso_3166}.png"
   if drawer.is_file(flag):
      return flag
-  else:
-    return None
 
-def get_origin(mod_id, mod_path, kunos_assets, json_filename: str):
+def get_origin(
+  mod_id: str, mod_path: str, kunos_assets: list, json_filename: str
+) -> str:
   if mod_id in kunos_assets:
-    mod_files = drawer.basename(drawer.get_files(mod_path))
+    mod_files = drawer.get_basenames(drawer.get_files(mod_path))
     if f'dlc_{json_filename}' in mod_files:
       origin = 'dlc'
     else:
@@ -42,7 +47,7 @@ def get_origin(mod_id, mod_path, kunos_assets, json_filename: str):
     origin = 'mod'
   return origin
 
-def get_ui_info(mod_path, origin, json_filename):
+def get_ui_info(mod_path: str, origin: str, json_filename: str) -> dict:
   if origin == 'dlc':
     json_filename = f'dlc_{json_filename}'
   json_file = f"{mod_path}/ui/{json_filename}"
@@ -51,7 +56,7 @@ def get_ui_info(mod_path, origin, json_filename):
   else:
     return {}
 
-def get_app_ui(mod_path: str, lang: str):
+def get_app_ui(mod_path: str, lang: str) -> dict:
   try:
     if lang == 'python':
       json_file = f"{mod_path}/ui/ui_app.json"
@@ -66,14 +71,14 @@ def get_app_ui(mod_path: str, lang: str):
   except FileNotFoundError:
     return {}
 
-def get_ppfilter_ui(mod_path: str):
+def get_ppfilter_ui(mod_path: str) -> dict:
   ui_info = notebook.read_ini(mod_path)
   if 'ABOUT' in ui_info:
     return ui_info.get('ABOUT')
   else:
     return {}
 
-def get_weather_ui(mod_path: str):
+def get_weather_ui(mod_path: str) -> dict:
   ini_file = f"{mod_path}/weather.ini"
   ui_info = notebook.read_ini(ini_file)
   if 'LAUNCHER' in ui_info:
@@ -88,16 +93,16 @@ def get_weather_ui(mod_path: str):
   return ui_info
 
 
-def get_skins(mod_path, include):
+def get_skins(mod_path: str, include: list) -> dict:
   folder = f"{mod_path}/skins"
-  if drawer.is_folder(folder) is False:
+  if not drawer.is_folder(folder):
     return None
   skin_dirs = drawer.get_folders(folder)
   skin_dirs.sort()
   skins = {}
   for skin_path in skin_dirs:
     # Adding basic skin information
-    skin_id = drawer.basename(skin_path)
+    skin_id = drawer.get_basename(skin_path)
     skin_info = {'path': skin_path}
     # Getting optional skin info
     ## Adding UI info
@@ -135,18 +140,17 @@ class ModFetcher:
   # Returns cars
   # Available 'include' options:
   # ui, flag, badge, preview, logo, skins, size
-  def fetch_cars(self, AC_DIR, include: list = []):
+  def fetch_cars(self, AC_DIR: str, include: list = []) -> dict:
     cars = {'kunos': {}, 'dlc': {}, 'mod': {}}
-    folders = drawer.get_folders(f'{AC_DIR}/content/cars')
-    folders.sort()
+    folders = get_folders_sorted(f'{AC_DIR}/content/cars')
     for mod_path in folders:
       mod_id, mod_info, origin = self.get_car_info(mod_path, include)
       cars[origin][mod_id] = mod_info
     return cars
 
-  def get_car_info(self, mod_path, include: list = []):
+  def get_car_info(self, mod_path: str, include: list = []) -> dict:
     # Establishing basic mod properties
-    mod_id = drawer.basename(mod_path)
+    mod_id = drawer.get_basename(mod_path)
     mod_info = {'path': mod_path}
     # Getting car origin
     origin = get_origin(mod_id, mod_path, data.kunos_cars, 'ui_car.json')
@@ -186,18 +190,17 @@ class ModFetcher:
   # Returns tracks
   # Available 'include' options:
   # ui, flag, outline, preview, skins, size
-  def fetch_tracks(self, AC_DIR, include: list = []):
+  def fetch_tracks(self, AC_DIR: str, include: list = []) -> dict:
     tracks = {'kunos': {}, 'dlc': {}, 'mod': {}}
-    folders = drawer.get_folders(f'{AC_DIR}/content/tracks')
-    folders.sort()
+    folders = get_folders_sorted(f'{AC_DIR}/content/tracks')
     for mod_path in folders:
       mod_id, mod_info, origin = self.get_track_info(mod_path, include)
       tracks[origin][mod_id] = mod_info
     return tracks
 
-  def get_track_info(self, mod_path, include: list = []):
+  def get_track_info(self, mod_path: str, include: list = []) -> dict:
     # Establishing basic mod properties
-    mod_id = drawer.basename(mod_path)
+    mod_id = drawer.get_basename(mod_path)
     mod_info = {'path': mod_path}
     # Getting track origin
     origin = get_origin(mod_id, mod_path, data.kunos_tracks, 'ui_track.json')
@@ -234,7 +237,7 @@ class ModFetcher:
   # Returns apps
   # Available 'include' options:
   # ui, icon, size
-  def fetch_apps(self, AC_DIR, include: list = []):
+  def fetch_apps(self, AC_DIR: str, include: list = []) -> dict:
     apps = {'kunos': {}, 'dlc': {}, 'mod': {}}
     folders = drawer.get_folders(f'{AC_DIR}/apps/python') + drawer.get_folders(f'{AC_DIR}/apps/lua')
     folders.sort()
@@ -243,10 +246,10 @@ class ModFetcher:
       apps[origin][mod_id] = mod_info
     return apps
 
-  def get_app_info(self, mod_path, include: list = []):
+  def get_app_info(self, mod_path: str, include: list = []) -> dict:
     # Establishing basic mod properties
-    mod_id = drawer.basename(mod_path)
-    lang = drawer.basename(drawer.get_parent(mod_path))
+    mod_id = drawer.get_basename(mod_path)
+    lang = drawer.get_basename(drawer.get_parent(mod_path))
     mod_info = {'path': mod_path, 'lang': lang}
     # Getting app origin
     if (lang == 'python') and (mod_id in data.kunos_apps):
@@ -270,18 +273,17 @@ class ModFetcher:
   # Returns ppfilters
   # Available 'include' options:
   # ui, size
-  def fetch_ppfilters(self, AC_DIR, include: list = []):
+  def fetch_ppfilters(self, AC_DIR: str, include: list = []) -> dict:
     ppfilters = {'kunos': {}, 'dlc': {}, 'mod': {}}
-    files = drawer.get_files(f'{AC_DIR}/system/cfg/ppfilters')
-    files.sort()
+    files = get_files_sorted(f'{AC_DIR}/system/cfg/ppfilters')
     for mod_path in files:
       mod_id, mod_info, origin = self.get_ppfilter_info(mod_path, include)
       ppfilters[origin][mod_id] = mod_info
     return ppfilters
 
-  def get_ppfilter_info(self, mod_path, include: list = []):
+  def get_ppfilter_info(self, mod_path: str, include: list = []) -> dict:
     # Establishing basic mod properties
-    mod_id = drawer.basename(mod_path).removesuffix('.ini')
+    mod_id = drawer.get_basename(mod_path).removesuffix('.ini')
     mod_info = {'path': mod_path}
     # Getting ppfilter origin
     if mod_id in data.kunos_ppfilters:
@@ -300,18 +302,17 @@ class ModFetcher:
   # Returns weather
   # Available 'include' options:
   # ui, preview, size
-  def fetch_weather(self, AC_DIR, include: list = []):
+  def fetch_weather(self, AC_DIR: str, include: list = []) -> dict:
     weather = {'kunos': {}, 'dlc': {}, 'mod': {}}
-    folders = drawer.get_folders(f'{AC_DIR}/content/weather')
-    folders.sort()
+    folders = get_folders_sorted(f'{AC_DIR}/content/weather')
     for mod_path in folders:
-      mod_id, mod_info, origin = self.get_ppfilter_info(mod_path, include)
+      mod_id, mod_info, origin = self.get_weather_info(mod_path, include)
       weather[origin][mod_id] = mod_info
     return weather
 
-  def get_weather_info(self, mod_path, include: list = []):
+  def get_weather_info(self, mod_path: str, include: list = []) -> dict:
     # Establishing basic mod properties
-    mod_id = drawer.basename(mod_path)
+    mod_id = drawer.get_basename(mod_path)
     mod_info = {'path': mod_path}
     # Getting ppfilter origin
     if mod_id in data.kunos_weather:
