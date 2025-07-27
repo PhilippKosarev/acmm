@@ -133,12 +133,12 @@ def get_skins(mod_path: str, include: list) -> dict:
 class InfoGatherer:
 
   # Available include options:
-  # ['size', 'ui', 'flag', 'preview', 'badge', 'logo', 'skins']
+  # ['size', 'ui', 'flag', 'preview', 'skins', 'badge', 'logo']
   # Note: option 'flag' depends on, and is stored in 'ui'
   def get_car_info(self, mod_path: str, include: list = []) -> dict:
     # Establishing basic mod properties
     mod_id = drawer.get_basename(mod_path)
-    mod_info = {'path': mod_path}
+    mod_info = {'mod_id': mod_id, 'path': mod_path}
     # Getting car origin
     origin = get_origin(mod_id, mod_path, data.kunos_cars, 'ui_car.json')
     # Getting optional information
@@ -171,16 +171,16 @@ class InfoGatherer:
     if 'skins' in include:
       mod_info['skins'] = get_skins(mod_path, include)
     # Returning
-    return mod_id, mod_info, origin
+    return mod_info, origin
 
   # Available include options:
-  # ['size', 'ui', 'flag', 'preview', 'outline', 'skins']
+  # ['size', 'ui', 'flag', 'preview', 'skins', 'outline']
   # Note: option 'flag' depends on, and is stored in 'ui'
   def get_track_info(self, mod_path: str, include: list = []) -> dict:
     #TODO: add layouts info
     # Establishing basic mod properties
     mod_id = drawer.get_basename(mod_path)
-    mod_info = {'path': mod_path}
+    mod_info = {'mod_id': mod_id, 'path': mod_path}
     # Getting track origin
     origin = get_origin(mod_id, mod_path, data.kunos_tracks, 'ui_track.json')
     # Getting optional information
@@ -210,7 +210,7 @@ class InfoGatherer:
       mod_info['skins'] = get_skins(mod_path, include)
     # TODO: add layout info
     # Returning
-    return mod_id, mod_info, origin
+    return mod_info, origin
 
   # Available include options:
   # ['size', 'ui', 'icon']
@@ -218,7 +218,7 @@ class InfoGatherer:
     # Establishing basic mod properties
     mod_id = drawer.get_basename(mod_path)
     lang = drawer.get_basename(drawer.get_parent(mod_path))
-    mod_info = {'path': mod_path, 'lang': lang}
+    mod_info = {'mod_id': mod_id, 'path': mod_path, 'lang': lang}
     # Getting app origin
     if (lang == 'python') and (mod_id in data.kunos_apps):
       origin = 'kunos'
@@ -235,14 +235,14 @@ class InfoGatherer:
       image_file = f"{mod_path}/icon.png"
       mod_info['icon'] = get_existing(image_file)
     # Returning
-    return mod_id, mod_info, origin
+    return mod_info, origin
 
   # Available include options:
   # ['size', 'ui']
   def get_ppfilter_info(self, mod_path: str, include: list = []) -> dict:
     # Establishing basic mod properties
     mod_id = drawer.get_basename(mod_path).removesuffix('.ini')
-    mod_info = {'path': mod_path}
+    mod_info = {'mod_id': mod_id, 'path': mod_path}
     # Getting ppfilter origin
     if mod_id in data.kunos_ppfilters:
       origin = 'kunos'
@@ -254,14 +254,14 @@ class InfoGatherer:
     ## Getting UI info
     if 'ui' in include: mod_info['ui'] = get_ppfilter_ui_info(mod_path)
     # Returning
-    return mod_id, mod_info, origin
+    return mod_info, origin
 
   # Available include options:
   # ['size', 'ui', 'preview']
   def get_weather_info(self, mod_path: str, include: list = []) -> dict:
     # Establishing basic mod properties
     mod_id = drawer.get_basename(mod_path)
-    mod_info = {'path': mod_path}
+    mod_info = {'mod_id': mod_id, 'path': mod_path}
     # Getting weather origin
     if mod_id in data.kunos_weather:
       origin = 'kunos'
@@ -279,4 +279,4 @@ class InfoGatherer:
       image_file = f"{mod_path}/preview.png"
       mod_info['preview'] = get_existing(image_file)
     # Returning
-    return mod_id, mod_info, origin
+    return mod_info, origin

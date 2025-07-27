@@ -96,18 +96,19 @@ class CLI:
 
   def get_category_mods(self, mod_category: str, category_info: dict, queue):
     get_function = category_info.get('get_function')
-    assets = get_function(AC_DIR, ['size'])
+    include_info = ['size']
+    assets = get_function(AC_DIR, include_info)
     opt_kunos = options.get('kunos').get('enabled')
     opt_all = options.get('all').get('enabled')
     if opt_kunos is False and opt_all is False:
       mods = assets.get('mod')
     elif opt_kunos is True and opt_all is False:
-      mods = assets.get('kunos') | assets.get('dlc')
+      mods = assets.get('kunos') + assets.get('dlc')
     else:
-      mods = assets.get('kunos') | assets.get('dlc') | assets.get('mod')
+      mods = assets.get('kunos') + assets.get('dlc') + assets.get('mod')
     size = 0
-    for mod_id in mods:
-      size += mods.get(mod_id).get('size')
+    for mod in mods:
+      size += mod.get('size')
     return_tuple = (mod_category, mods, size)
     queue.put(return_tuple)
 
@@ -236,7 +237,7 @@ class CLI:
       size = category_info.get('size')
       self.print_mod_category(title, mods, size)
 
-  def print_mod_category(self, title: str, mod_list: dict, filesize: int):
+  def print_mod_category(self, title: str, mods: dict, filesize: int):
     if filesize is not None:
       filesize = drawer.get_readable_filesize(filesize)
       units = filesize[1].upper()
@@ -244,13 +245,16 @@ class CLI:
       filesize_string = f"{filesize} {units}"
     else:
       filesize_string = "Unknown"
-    entries = len(mod_list)
+    entries = len(mods)
     # Quitting if there's nothing to print
     if entries == 0:
       return
     # Printing
     typewriter.print(f"{typewriter.bolden(title)}: ( {entries} | {filesize_string} )")
-    mods_columns = typewriter.list_to_columns(mod_list, None, 2)
+    mod_ids = []
+    for mod in mods:
+      mod_ids.append(mod.get('mod_id'))
+    mods_columns = typewriter.list_to_columns(mod_ids, None, 2)
     typewriter.print(f"{mods_columns}\n")
 
 # Inputs/Commands/Options configuration
