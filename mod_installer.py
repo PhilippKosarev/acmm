@@ -9,6 +9,7 @@ info_gatherer = InfoGatherer()
 
 # tuple format: (find_function, delete_mod_before_installing?)
 installable_mod_categories = [
+  # Cars
   {
     'category-id': 'cars',
     'find-function': mod_finder.find_cars,
@@ -16,7 +17,14 @@ installable_mod_categories = [
     'install-dir': data.get('asset-paths').get('cars'),
     'install-mode': 'delete-then-install',
   },
-  # 'tracks': (mod_finder.find_tracks, True),
+  # Tracks
+  {
+    'category-id': 'tracks',
+    'find-function': mod_finder.find_tracks,
+    'info-function': info_gatherer.get_track_info,
+    'install-dir': data.get('asset-paths').get('tracks'),
+    'install-mode': 'delete-then-install',
+  },
   # 'apps': (mod_finder.find_apps, True),
   # 'ppfilters': (mod_finder.find_ppfilters, True),
   # 'weather': (mod_finder.find_weather, True),
@@ -74,9 +82,9 @@ class ModInstaller:
       if install_mode == 'delete-then-install':
         if drawer.exists(install_final_path):
           drawer.delete_path(install_final_path)
-        drawer.copy(mod_path, install_final_path)
       else:
         raise NotImplementedError(f"Install mode '{install_mode}' is not implemented.")
+      drawer.copy(mod_path, install_final_path)
       iteration += 1
       installed_mods.append(mod)
     return installed_mods
