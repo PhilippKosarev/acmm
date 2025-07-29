@@ -25,8 +25,15 @@ installable_mod_categories = [
     'install-dir': data.get('asset-paths').get('tracks'),
     'install-mode': 'delete-then-install',
   },
+  # PP Filters
+  {
+    'category-id': 'ppfilters',
+    'find-function': mod_finder.find_ppfilters,
+    'info-function': info_gatherer.get_ppfilter_info,
+    'install-dir': data.get('asset-paths').get('ppfilters'),
+    'install-mode': 'delete-then-install',
+  },
   # 'apps': (mod_finder.find_apps, True),
-  # 'ppfilters': (mod_finder.find_ppfilters, True),
   # 'weather': (mod_finder.find_weather, True),
   # (mod_finder.find_extensions, False),
   # (mod_finder.find_gui, False),
@@ -52,7 +59,7 @@ class ModInstaller:
       install_dir = item.get('install-dir')
       install_mode = item.get('install-mode')
       # Finding mod paths
-      found_paths = find_function(directory, include)
+      found_paths = find_function(directory)
       # Getting mod info
       found_mods = []
       for path in found_paths:

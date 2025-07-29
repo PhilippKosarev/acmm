@@ -17,12 +17,12 @@ def search_for_files(path: str, filename: str) -> list:
 # Finds mods.
 class ModFinder:
 
-  def find_cars(self, path: str, include: list = []) -> list:
+  def find_cars(self, path: str) -> list:
     mod_paths = search_for_files(path, 'collider.kn5')
     mod_paths = drawer.get_parents(mod_paths)
     return mod_paths
 
-  def find_tracks(self, folder: str, include: list = []) -> list:
+  def find_tracks(self, folder: str) -> list:
     files = drawer.get_files_recursive(folder)
     kn5_folders = []
     kn5_files = clipboard.match_suffix(files, ".kn5")
@@ -41,6 +41,26 @@ class ModFinder:
     if mod_paths == []:
       map_parents = clipboard.deduplicate(drawer.get_parents(map_parents))
       mod_paths = clipboard.get_duplicates(kn5_folders, map_parents)
+    return mod_paths
+
+  def find_ppfilters(self, folder: str) -> list:
+    markers = ['[DOF]', '[COLOR]']
+    files = drawer.get_files_recursive(folder)
+    ini_files = clipboard.match_suffix(files, ".ini")
+    mod_paths = []
+    for file in ini_files:
+      try:
+        data = open(file, 'r').read()
+      except:
+        continue
+      for marker in markers:
+        if marker in data:
+          mod_paths.append(file)
+          continue
+    parents = clipboard.deduplicate(drawer.get_parents(mod_paths))
+    if len(parents) == 1:
+      mod_paths = drawer.get_all(parents[0])
+    mod_paths = clipboard.deduplicate(mod_paths)
     return mod_paths
 
   def find_python_apps(self, folder: str):
@@ -76,34 +96,6 @@ class ModFinder:
     mods = []
     for path in mod_paths:
       mod, origin = info_gatherer.get_track_info(path, include)
-      mods.append(mod)
-    return mods
-
-  def find_ppfilters(self, folder: str, include: list = []) -> list:
-    # Getting mod paths
-    markers = ['[DOF]', '[COLOR]']
-    files = drawer.get_files_recursive(folder)
-    ini_files = clipboard.match_suffix(files, ".ini")
-    mod_paths = []
-    for file in ini_files:
-      try:
-        data = open(file, 'r').read()
-      except:
-        continue
-      for marker in markers:
-        if marker in data:
-          mod_paths.append(file)
-          continue
-    parents = clipboard.deduplicate(drawer.get_parents(mod_paths))
-    if len(parents) == 1:
-      mod_paths = drawer.get_all(parents[0])
-    mod_paths = clipboard.deduplicate(mod_paths)
-    # Getting mod info
-    mods = []
-    for path in mod_paths:
-      mod, origin = info_gatherer.get_track_info(path, include)
-      mod['install-dir'] = data.get('asset-paths').get('ppfilters')
-      mod['install-mode'] = 'replace'
       mods.append(mod)
     return mods
 
