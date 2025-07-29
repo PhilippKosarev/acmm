@@ -22,8 +22,8 @@ class ModFinder:
     mod_paths = drawer.get_parents(mod_paths)
     return mod_paths
 
-  def find_tracks(self, folder: str) -> list:
-    files = drawer.get_files_recursive(folder)
+  def find_tracks(self, path: str) -> list:
+    files = drawer.get_files_recursive(path)
     kn5_folders = []
     kn5_files = clipboard.match_suffix(files, ".kn5")
     for file in kn5_files:
@@ -43,9 +43,9 @@ class ModFinder:
       mod_paths = clipboard.get_duplicates(kn5_folders, map_parents)
     return mod_paths
 
-  def find_ppfilters(self, folder: str) -> list:
+  def find_ppfilters(self, path: str) -> list:
     markers = ['[DOF]', '[COLOR]']
-    files = drawer.get_files_recursive(folder)
+    files = drawer.get_files_recursive(path)
     ini_files = clipboard.match_suffix(files, ".ini")
     mod_paths = []
     for file in ini_files:
@@ -63,10 +63,9 @@ class ModFinder:
     mod_paths = clipboard.deduplicate(mod_paths)
     return mod_paths
 
-  def find_python_apps(self, folder: str):
-    # Getting mod paths
+  def find_python_apps(self, path: str) -> list:
     mod_paths = []
-    files = drawer.get_files_recursive(folder)
+    files = drawer.get_files_recursive(path)
     python_files = clipboard.match_suffix(files, ".py")
     for file in python_files:
       basename = drawer.get_basename(file).removesuffix('.py')
@@ -74,30 +73,19 @@ class ModFinder:
       parent_basename = drawer.get_basename(parent)
       if basename == parent_basename:
         mod_paths.append(parent)
-    # Getting mod info
-    mods = []
-    for path in mod_paths:
-      mod, origin = info_gatherer.get_track_info(path, include)
-      mods.append(mod)
-    return mods
+    return mod_paths
 
-  def find_lua_apps(self, folder: str, include: list = []):
-    # Getting mod paths
+  def find_lua_apps(self, path: str) -> list:
     mod_paths = []
-    files = drawer.get_files_recursive(folder)
-    python_files = clipboard.match_suffix(files, ".lua")
-    for file in python_files:
+    files = drawer.get_files_recursive(path)
+    lua_files = clipboard.match_suffix(files, ".lua")
+    for file in lua_files:
       basename = drawer.get_basename(file).removesuffix('.lua')
       parent = drawer.get_parent(file)
       parent_basename = drawer.get_basename(parent)
       if basename == parent_basename:
         mod_paths.append(parent)
-    # Getting mod info
-    mods = []
-    for path in mod_paths:
-      mod, origin = info_gatherer.get_track_info(path, include)
-      mods.append(mod)
-    return mods
+    return mod_paths
 
   def find_weather(self, folder: str, include: list = []) -> list:
     # Getting mod paths

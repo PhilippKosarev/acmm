@@ -9,7 +9,7 @@ data = {
   'asset-paths': {
     'cars': 'content/cars',
     'tracks': 'content/tracks',
-    'apps': 'apps/',
+    'apps': 'apps',
     'ppfilters': 'system/cfg/ppfilters/',
     'weather': 'content/weather',
   },

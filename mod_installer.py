@@ -33,7 +33,21 @@ installable_mod_categories = [
     'install-dir': data.get('asset-paths').get('ppfilters'),
     'install-mode': 'delete-then-install',
   },
-  # 'apps': (mod_finder.find_apps, True),
+  # Apps
+  {
+    'category-id': 'python-apps',
+    'find-function': mod_finder.find_python_apps,
+    'info-function': info_gatherer.get_app_info,
+    'install-dir': data.get('asset-paths').get('apps') + '/python',
+    'install-mode': 'delete-then-install',
+  },
+  {
+    'category-id': 'lua-apps',
+    'find-function': mod_finder.find_lua_apps,
+    'info-function': info_gatherer.get_app_info,
+    'install-dir': data.get('asset-paths').get('apps') + '/lua',
+    'install-mode': 'delete-then-install',
+  },
   # 'weather': (mod_finder.find_weather, True),
   # (mod_finder.find_extensions, False),
   # (mod_finder.find_gui, False),
