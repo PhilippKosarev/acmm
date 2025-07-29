@@ -8,12 +8,13 @@ from libjam import captain, drawer, typewriter, notebook, flashcard
 # Internal imports
 from mod_fetcher import ModFetcher
 mod_fetcher = ModFetcher()
-from mod_manager import ModManager
-from data import Data
-data = Data()
+from mod_installer import ModInstaller
+mod_installer = ModInstaller()
+from data import data
 
 # Handling config
 HOME = drawer.get_home()
+TEMP = drawer.get_temp() + '/acmm'
 script_folder = os.path.dirname(os.path.realpath(__file__))
 CONFIG_TEMPLATE_FILE = f"{script_folder}/config.toml.in"
 CONFIG_DIR = f"{HOME}/.config/acmm"
@@ -44,8 +45,6 @@ elif not AC_DIR.endswith(assettocorsa):
 Currently specified AC directory:\n{AC_DIR}""")
   sys.exit(-1)
 
-mod_manager = ModManager(AC_DIR)
-
 mod_categories = {
   'cars': {
     'title': 'Cars', 'get_function': mod_fetcher.fetch_cars,
@@ -64,118 +63,103 @@ mod_categories = {
   },
 }
 
-# The command line interface for acmm
+include_info = ['size']
+
+def get_category_mods(mod_category: str, category_info: dict, queue):
+  get_function = category_info.get('get_function')
+  assets = get_function(AC_DIR, include_info)
+  opt_kunos = options.get('kunos').get('enabled')
+  opt_all = options.get('all').get('enabled')
+  if opt_kunos is False and opt_all is False:
+    mods = assets.get('mod')
+  elif opt_kunos is True and opt_all is False:
+    mods = assets.get('kunos') + assets.get('dlc')
+  else:
+    mods = assets.get('kunos') + assets.get('dlc') + assets.get('mod')
+  size = 0
+  for mod in mods:
+    size += mod.get('size')
+  return_tuple = (mod_category, mods, size)
+  queue.put(return_tuple)
+
+def get_mods():
+  start_time = time.time()
+  typewriter.print_status('Fetching installed mods...')
+  result_dict = {}
+  queue = SimpleQueue()
+  for mod_category in mod_categories:
+    if options.get(mod_category).get('enabled') is False:
+      continue
+    category_info = mod_categories.get(mod_category)
+    result_dict[mod_category] = category_info
+    process = Process(target=get_category_mods, args=(mod_category, category_info, queue))
+    result_dict[mod_category]['process'] = process
+    process.start()
+  for mod_category in result_dict:
+    process = result_dict.get(mod_category).get('process')
+    return_info = queue.get()
+    mod_category = return_info[0]
+    result_dict[mod_category]['mods'] = return_info[1]
+    result_dict[mod_category]['size'] = return_info[2]
+  for mod_category in result_dict:
+    process.join()
+  queue.close()
+  end_time = time.time()
+  elapsed = end_time - start_time
+  typewriter.print(f"Fetched installed mods in {round(elapsed, 2)}s.")
+  return result_dict
+
+# The command line interface for acmm.
 class CLI:
-  def get_mods(self):
-    typewriter.print_status('Fetching installed mods...')
-    start_time = time.time()
-    result_dict = {}
-    queue = SimpleQueue()
-    for mod_category in mod_categories:
-      if options.get(mod_category).get('enabled') is False:
-        continue
-      category_info = mod_categories.get(mod_category)
-      result_dict[mod_category] = category_info
-      process = Process(target=self.get_category_mods, args=(mod_category, category_info, queue))
-      result_dict[mod_category]['process'] = process
-      process.start()
-    for mod_category in result_dict:
-      process = result_dict.get(mod_category).get('process')
-      return_info = queue.get()
-      mod_category = return_info[0]
-      result_dict[mod_category]['mods'] = return_info[1]
-      result_dict[mod_category]['size'] = return_info[2]
-    for mod_category in result_dict:
-      process.join()
-    queue.close()
-    end_time = time.time()
-    elapsed = end_time - start_time
-    typewriter.print(f"Fetched installed mods in {round(elapsed, 2)}s.")
-    return result_dict
 
-
-  def get_category_mods(self, mod_category: str, category_info: dict, queue):
-    get_function = category_info.get('get_function')
-    include_info = ['size']
-    assets = get_function(AC_DIR, include_info)
-    opt_kunos = options.get('kunos').get('enabled')
-    opt_all = options.get('all').get('enabled')
-    if opt_kunos is False and opt_all is False:
-      mods = assets.get('mod')
-    elif opt_kunos is True and opt_all is False:
-      mods = assets.get('kunos') + assets.get('dlc')
-    else:
-      mods = assets.get('kunos') + assets.get('dlc') + assets.get('mod')
-    size = 0
-    for mod in mods:
-      size += mod.get('size')
-    return_tuple = (mod_category, mods, size)
-    queue.put(return_tuple)
-
-
-  # List installed mods
+  # List installed mods.
   def list(self):
-    mod_categories = self.get_mods()
+    mod_categories = get_mods()
     self.print_mod_categories(mod_categories)
 
 
-  # Interface to install mods
-  def install(self, path: str, *args):
-    # Getting arbitrary number of paths
-    paths = list(args)
-    paths.insert(0, path)
-    for path in paths:
-      # Checking file
-      if drawer.exists(path) is False:
-        print(f"File '{path}' does not exist.")
-        sys.exit(-1)
-
-    for path in paths:
-      # Pre processing (extracting archive, copying files)
-      size = round((drawer.get_filesize(path) / 1_000_000_000), 1)
-      if size > 10:
-        print(f"Specified mod(s) weigh {size}GB, installing it might take a while. ")
-        if flashcard.yn_prompt("Proceed anyway?") is False:
-          sys.exit(0)
-
-    typewriter.print_status("Cleaning temp dir...")
-    mod_manager.clean_temp_dir()
-    for path in paths:
-      typewriter.print_status("Processing...")
-      basename = drawer.get_basename(path)
+  # Interface to install mods.
+  def install(self, path: str):
+    # Unpacking
+    typewriter.print_status("Processing...")
+    if drawer.get_filetype(path) != 'folder':
+      if not drawer.is_archive_supported(path):
+        print('Unsupported archive type.')
+        return
+      if drawer.exists(TEMP):
+        drawer.delete_folder(TEMP)
+      drawer.make_folder(TEMP)
+      filename = drawer.get_basename(path)
       def print_extract_progress(done: int, todo: int):
-        typewriter.print_progress(f"Extracting '{basename}'", done, todo)
-      unpacked = mod_manager.extract_mod(path, progress_function=print_extract_progress)
-      if unpacked is None:
-        typewriter.print(f"Cannot process contents of '{path}'.")
-        sys.exit(-1)
-
+        typewriter.print_progress(f"Extracting '{filename}'", done, todo)
+      unpacked = drawer.extract_archive(path, TEMP, progress_function=print_extract_progress)
+    else:
+      unpacked = path
     # Searching for mods
     typewriter.print_status('Searching for mods...')
-    mods = mod_manager.find_mods()
-    meta_mods = mod_manager.find_meta_mods()
-    # Joining metamods
-    if meta_mods != {}:
-      mods = mods | meta_mods
-    if mods == {}:
-      typewriter.print("No mods found.")
-      sys.exit(-1)
-    # Printing found mods
-    typewriter.print(typewriter.bolden("Mods found:"))
-    self.print_mod_categories(mods)
-    # Getting user input
-    if not flashcard.yn_prompt("Install listed mods?"):
-      print("Installation cancelled.")
-      sys.exit(0)
+    installable_mods = mod_installer.find_installable_mods(unpacked, include_info)
+    if len(installable_mods) == 0:
+      typewriter.print('No mods found.')
+      return
+    size = 0
+    for mod in installable_mods:
+      size += mod.get('size')
+    self.print_mod_category('Found mods', installable_mods, size)
+    try:
+      if not flashcard.yn_prompt("Install listed mods?"):
+        return typewriter.print("Installation cancelled.")
+    except KeyboardInterrupt:
+        return typewriter.print("Installation cancelled.")
     # Installing mods
-    def print_install_progress(copied: int, to_copy: int):
-      typewriter.print_progress("Installing", copied, to_copy)
-    mod_manager.install_mods(mods, progress_function=print_install_progress)
-    typewriter.print("Installation complete.")
+    def print_install_progress(current_mod: dict, done: int, todo: int):
+      current_mod = current_mod.get('mod_id')
+      typewriter.print_progress(f"Installing '{current_mod}'", done, todo)
+    installed_mods = mod_installer.install_mods(installable_mods, AC_DIR, print_install_progress)
+    typewriter.print(f"Installed {len(installed_mods)} mods.")
 
   # Interface to remove mods
   def remove(self, search_term: str):
-    mod_categories = self.get_mods()
+    mod_categories = get_mods()
     # Removing non matching mods
     for category in mod_categories:
       non_matching = []

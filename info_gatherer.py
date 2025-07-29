@@ -1,8 +1,11 @@
 # Imports
 from libjam import drawer, notebook
+import pycountry
 # Internal imports
-from data import Data
-data = Data()
+from data import data
+
+# Shorthand vars
+kunos_assets = data.get('kunos-assets')
 
 # Helper functions
 # If path exists, returns path, otherwise returns None.
@@ -140,7 +143,7 @@ class InfoGatherer:
     mod_id = drawer.get_basename(mod_path)
     mod_info = {'mod_id': mod_id, 'path': mod_path}
     # Getting car origin
-    origin = get_origin(mod_id, mod_path, data.kunos_cars, 'ui_car.json')
+    origin = get_origin(mod_id, mod_path, kunos_assets.get('cars'), 'ui_car.json')
     # Getting optional information
     ## Getting filesize info
     if 'size' in include:
@@ -182,7 +185,7 @@ class InfoGatherer:
     mod_id = drawer.get_basename(mod_path)
     mod_info = {'mod_id': mod_id, 'path': mod_path}
     # Getting track origin
-    origin = get_origin(mod_id, mod_path, data.kunos_tracks, 'ui_track.json')
+    origin = get_origin(mod_id, mod_path, kunos_assets.get('tracks'), 'ui_track.json')
     # Getting optional information
     ## Getting filesize info
     if 'size' in include:
@@ -220,7 +223,7 @@ class InfoGatherer:
     lang = drawer.get_basename(drawer.get_parent(mod_path))
     mod_info = {'mod_id': mod_id, 'path': mod_path, 'lang': lang}
     # Getting app origin
-    if (lang == 'python') and (mod_id in data.kunos_apps):
+    if (lang == 'python') and (mod_id in kunos_assets.get('apps')):
       origin = 'kunos'
     else:
       origin = 'mod'
@@ -244,7 +247,7 @@ class InfoGatherer:
     mod_id = drawer.get_basename(mod_path).removesuffix('.ini')
     mod_info = {'mod_id': mod_id, 'path': mod_path}
     # Getting ppfilter origin
-    if mod_id in data.kunos_ppfilters:
+    if mod_id in kunos_assets.get('ppfilters'):
       origin = 'kunos'
     else:
       origin = 'mod'
@@ -263,7 +266,7 @@ class InfoGatherer:
     mod_id = drawer.get_basename(mod_path)
     mod_info = {'mod_id': mod_id, 'path': mod_path}
     # Getting weather origin
-    if mod_id in data.kunos_weather:
+    if mod_id in kunos_assets.get('weather'):
       origin = 'kunos'
     else:
       origin = 'mod'

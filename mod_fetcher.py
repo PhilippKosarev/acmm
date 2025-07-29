@@ -1,7 +1,7 @@
 # Imports
-import pycountry
 from libjam import drawer
 # Internal imports
+from data import data
 from info_gatherer import InfoGatherer
 info_gatherer = InfoGatherer()
 
@@ -25,7 +25,7 @@ class ModFetcher:
   # Returns installed cars.
   def fetch_cars(self, AC_DIR: str, include: list = []) -> dict:
     cars = get_origins()
-    folders = get_folders_sorted(f'{AC_DIR}/content/cars')
+    folders = get_folders_sorted(f"{AC_DIR}/{data.get('asset-paths').get('cars')}")
     for path in folders:
       mod, origin = info_gatherer.get_car_info(path, include)
       cars[origin].append(mod)
@@ -43,7 +43,10 @@ class ModFetcher:
   # Returns installed apps.
   def fetch_apps(self, AC_DIR: str, include: list = []) -> dict:
     apps = get_origins()
-    folders = drawer.get_folders(f'{AC_DIR}/apps/python') + drawer.get_folders(f'{AC_DIR}/apps/lua')
+    lang_folders = drawer.get_folders(f"{AC_DIR}/{data.get('asset-paths').get('apps')}")
+    folders = []
+    for folder in lang_folders:
+      folders += drawer.get_folders(folder)
     folders.sort()
     for path in folders:
       mod, origin = info_gatherer.get_app_info(path, include)
@@ -53,7 +56,7 @@ class ModFetcher:
   # Returns installed PP filters.
   def fetch_ppfilters(self, AC_DIR: str, include: list = []) -> dict:
     ppfilters = get_origins()
-    files = get_files_sorted(f'{AC_DIR}/system/cfg/ppfilters')
+    files = get_files_sorted(f"{AC_DIR}/{data.get('asset-paths').get('ppfilters')}")
     for path in files:
       mod, origin = info_gatherer.get_ppfilter_info(path, include)
       ppfilters[origin].append(mod)
@@ -62,7 +65,7 @@ class ModFetcher:
   # Returns installed weather.
   def fetch_weather(self, AC_DIR: str, include: list = []) -> dict:
     weather = get_origins()
-    folders = get_folders_sorted(f'{AC_DIR}/content/weather')
+    folders = get_folders_sorted(f"{AC_DIR}/{data.get('asset-paths').get('weather')}")
     for path in folders:
       mod, origin = info_gatherer.get_weather_info(path, include)
       weather[origin].append(mod)
