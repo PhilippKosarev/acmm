@@ -15,7 +15,7 @@ installable_mod_categories = [
     'find-function': mod_finder.find_cars,
     'info-function': info_gatherer.get_car_info,
     'install-dir': data.get('asset-paths').get('cars'),
-    'install-mode': 'delete-then-install',
+    'install-mode': 'clean',
   },
   # Tracks
   {
@@ -23,7 +23,7 @@ installable_mod_categories = [
     'find-function': mod_finder.find_tracks,
     'info-function': info_gatherer.get_track_info,
     'install-dir': data.get('asset-paths').get('tracks'),
-    'install-mode': 'delete-then-install',
+    'install-mode': 'clean',
   },
   # PP Filters
   {
@@ -31,7 +31,15 @@ installable_mod_categories = [
     'find-function': mod_finder.find_ppfilters,
     'info-function': info_gatherer.get_ppfilter_info,
     'install-dir': data.get('asset-paths').get('ppfilters'),
-    'install-mode': 'delete-then-install',
+    'install-mode': 'clean',
+  },
+  # Weather
+  {
+    'category-id': 'weather',
+    'find-function': mod_finder.find_weather,
+    'info-function': info_gatherer.get_weather_info,
+    'install-dir': data.get('asset-paths').get('weather'),
+    'install-mode': 'clean',
   },
   # Apps
   {
@@ -39,16 +47,15 @@ installable_mod_categories = [
     'find-function': mod_finder.find_python_apps,
     'info-function': info_gatherer.get_app_info,
     'install-dir': data.get('asset-paths').get('apps') + '/python',
-    'install-mode': 'delete-then-install',
+    'install-mode': 'clean',
   },
   {
     'category-id': 'lua-apps',
     'find-function': mod_finder.find_lua_apps,
     'info-function': info_gatherer.get_app_info,
     'install-dir': data.get('asset-paths').get('apps') + '/lua',
-    'install-mode': 'delete-then-install',
+    'install-mode': 'clean',
   },
-  # 'weather': (mod_finder.find_weather, True),
   # (mod_finder.find_extensions, False),
   # (mod_finder.find_gui, False),
   # (mod_finder.find_car_skins, False),
@@ -100,7 +107,7 @@ class ModInstaller:
         progress_function(mod, iteration + 1, n_of_mods)
       # Installing
       install_final_path = f"{install_dir}/{drawer.get_basename(mod_path)}"
-      if install_mode == 'delete-then-install':
+      if install_mode == 'clean':
         if drawer.exists(install_final_path):
           drawer.delete_path(install_final_path)
       else:

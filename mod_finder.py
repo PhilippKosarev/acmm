@@ -87,23 +87,15 @@ class ModFinder:
         mod_paths.append(parent)
     return mod_paths
 
-  def find_weather(self, folder: str, include: list = []) -> list:
+  def find_weather(self, path: str) -> list:
     # Getting mod paths
-    files = drawer.get_files_recursive(folder)
+    files = drawer.get_files_recursive(path)
     weather_files = clipboard.match_suffix(files, "/weather.ini")
     weather_folders = clipboard.deduplicate(drawer.get_parents(weather_files))
     weather_parents = clipboard.deduplicate(drawer.get_parents(weather_folders))
-    mod_paths = weather_parents
     if len(weather_parents) != 1:
       return []
-    # Getting mod info
-    mods = []
-    for path in mod_paths:
-      mod, origin = info_gatherer.get_weather_info(path, include)
-      mod['install-dir'] = data.get('asset-paths').get('weather')
-      mod['install-mode'] = 'replace'
-      mods.append(mod)
-    return mods
+    return weather_folders
 
   def find_extensions(self, folder: str, include: list = []) -> list:
     # Getting mod paths
