@@ -113,14 +113,42 @@ def get_mods() -> dict:
   typewriter.print(f"Fetched installed mods in {round(elapsed, 2)}s.")
   return result_dict
 
+# Helper functions
+def print_mod_categories(mod_categories: dict):
+  for category in mod_categories:
+    category_info = mod_categories.get(category)
+    title = category_info.get('title')
+    mods = category_info.get('mods')
+    size = category_info.get('size')
+    print_mod_category(title, mods, size)
+
+def print_mod_category(title: str, mods: list, filesize: int):
+  if filesize is not None:
+    filesize = drawer.get_readable_filesize(filesize)
+    units = filesize[1].upper()
+    filesize = round(filesize[0], 1)
+    filesize_string = f"{filesize} {units}"
+  else:
+    filesize_string = "Unknown"
+  entries = len(mods)
+  # Quitting if there's nothing to print
+  if entries == 0:
+    return
+  # Printing
+  typewriter.print(f"{typewriter.bolden(title)}: ( {entries} | {filesize_string} )")
+  mod_ids = []
+  for mod in mods:
+    mod_ids.append(mod.get('mod_id'))
+  mods_columns = typewriter.list_to_columns(mod_ids, None, 2)
+  typewriter.print(f"{mods_columns}\n")
+
 # The command line interface for acmm.
 class CLI:
 
   # List installed mods.
   def list(self):
     mod_categories = get_mods()
-    self.print_mod_categories(mod_categories)
-
+    print_mod_categories(mod_categories)
 
   # Interface to install mods.
   def install(self, path: str):
@@ -148,7 +176,7 @@ class CLI:
     size = 0
     for mod in installable_mods:
       size += mod.get('size')
-    self.print_mod_category('Found mods', installable_mods, size)
+    print_mod_category('Found mods', installable_mods, size)
     try:
       if not flashcard.yn_prompt("Install listed mods?"):
         return typewriter.print("Installation cancelled.")
@@ -185,7 +213,7 @@ class CLI:
     if len(mod_categories) == 0:
       print(f"No mods found matching '{search_term}'.")
       return
-    self.print_mod_categories(mod_categories)
+    print_mod_categories(mod_categories)
     if flashcard.yn_prompt('Remove the listed mods?') is False:
       print('Deletion aborted.')
       return
@@ -215,35 +243,6 @@ class CLI:
         typewriter.print(f"Last deleted: '{last_deleted}'.")
         exit()
     typewriter.print(f"Deleted {num_of_mods} mods.")
-
-  # Helper functions
-  def print_mod_categories(self, mod_categories: dict):
-    for category in mod_categories:
-      category_info = mod_categories.get(category)
-      title = category_info.get('title')
-      mods = category_info.get('mods')
-      size = category_info.get('size')
-      self.print_mod_category(title, mods, size)
-
-  def print_mod_category(self, title: str, mods: list, filesize: int):
-    if filesize is not None:
-      filesize = drawer.get_readable_filesize(filesize)
-      units = filesize[1].upper()
-      filesize = round(filesize[0], 1)
-      filesize_string = f"{filesize} {units}"
-    else:
-      filesize_string = "Unknown"
-    entries = len(mods)
-    # Quitting if there's nothing to print
-    if entries == 0:
-      return
-    # Printing
-    typewriter.print(f"{typewriter.bolden(title)}: ( {entries} | {filesize_string} )")
-    mod_ids = []
-    for mod in mods:
-      mod_ids.append(mod.get('mod_id'))
-    mods_columns = typewriter.list_to_columns(mod_ids, None, 2)
-    typewriter.print(f"{mods_columns}\n")
 
 # Inputs/Commands/Options configuration
 app = "acmm"
