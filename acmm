@@ -45,23 +45,28 @@ elif not AC_DIR.endswith(assettocorsa):
 Currently specified AC directory:\n{AC_DIR}""")
   sys.exit(-1)
 
-mod_categories = {
-  'cars': {
-    'title': 'Cars', 'get_function': mod_fetcher.fetch_cars,
+mod_categories = [
+  {
+    'title': 'Cars', 'key': 'cars',
+    'get_function': mod_fetcher.fetch_cars,
   },
-  'tracks': {
-    'title': 'Tracks', 'get_function': mod_fetcher.fetch_tracks
+  {
+    'title': 'Tracks', 'key': 'tracks',
+    'get_function': mod_fetcher.fetch_tracks
   },
-  'ppfilters': {
-    'title': 'PP Filters', 'get_function': mod_fetcher.fetch_ppfilters
+  {
+    'title': 'PP Filters', 'key': 'ppfilters',
+    'get_function': mod_fetcher.fetch_ppfilters
   },
-  'apps': {
-    'title': 'Apps', 'get_function': mod_fetcher.fetch_apps
+  {
+    'title': 'Weather', 'key': 'weather',
+    'get_function': mod_fetcher.fetch_weather
   },
-  'weather': {
-    'title': 'Weather', 'get_function': mod_fetcher.fetch_weather
+  {
+    'title': 'Apps', 'key': 'apps',
+    'get_function': mod_fetcher.fetch_apps
   },
-}
+]
 
 include_info = ['size']
 
@@ -82,26 +87,25 @@ def get_category_mods(mod_category: str, category_info: dict, queue):
   return_tuple = (mod_category, mods, size)
   queue.put(return_tuple)
 
-def get_mods():
+def get_mods() -> dict:
   start_time = time.time()
   typewriter.print_status('Fetching installed mods...')
   result_dict = {}
+  processes = []
   queue = SimpleQueue()
   for mod_category in mod_categories:
-    if options.get(mod_category).get('enabled') is False:
+    key = mod_category.get('key')
+    if not options.get(key).get('enabled'):
       continue
-    category_info = mod_categories.get(mod_category)
-    result_dict[mod_category] = category_info
-    process = Process(target=get_category_mods, args=(mod_category, category_info, queue))
-    result_dict[mod_category]['process'] = process
+    result_dict[key] = mod_category
+    process = Process(target=get_category_mods, args=(key, mod_category, queue))
     process.start()
-  for mod_category in result_dict:
-    process = result_dict.get(mod_category).get('process')
-    return_info = queue.get()
-    mod_category = return_info[0]
-    result_dict[mod_category]['mods'] = return_info[1]
-    result_dict[mod_category]['size'] = return_info[2]
-  for mod_category in result_dict:
+    processes.append(process)
+  for process in processes:
+    key, mods, size = queue.get()
+    result_dict[key]['mods'] = mods
+    result_dict[key]['size'] = size
+  for process in processes:
     process.join()
   queue.close()
   end_time = time.time()
