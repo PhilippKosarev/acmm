@@ -92,45 +92,69 @@ def get_weather_ui_info(mod_path: str) -> dict:
   return ui_info
 
 # Gets skins of cars and tracks.
-def get_skins(mod_path: str, include: list) -> dict:
-  folder = f"{mod_path}/skins"
-  if not drawer.is_folder(folder):
+def get_skins(path: str, include: list) -> list:
+  skins_dir = f"{path}/skins"
+  if not drawer.is_folder(skins_dir):
     return None
-  skin_dirs = drawer.get_folders(folder)
-  skin_dirs.sort()
-  skins = {}
-  for skin_path in skin_dirs:
+  skins_dirs = drawer.get_folders(skins_dir)
+  skins_dirs.sort()
+  skins = []
+  for directory in skins_dirs:
     # Adding basic skin information
-    skin_id = drawer.get_basename(skin_path)
-    skin_info = {'path': skin_path}
+    skin = {'id': drawer.get_basename(skin_path), 'path': directory}
     # Getting optional skin info
     ## Adding UI info
     if 'ui' in include:
       json_file = f"{skin_path}/ui_skin.json"
       if drawer.is_file(json_file):
         ui_info = notebook.read_json(json_file)
-        skin_info.update(ui_info)
+        skin['ui'] = ui_info
     ## Adding livery
     if 'livery' in include:
       image_file = f"{skin_path}/livery.png"
       if drawer.is_file(image_file):
-        skin_info['livery'] = image_file
+        skin['livery'] = image_file
       else:
-        skin_info['livery'] = None
+        skin['livery'] = None
     ## Adding preview
     if 'preview' in include:
       image_file = f"{skin_path}/preview.jpg"
       if drawer.is_file(image_file):
-        skin_info['preview'] = image_file
+        skin['preview'] = image_file
       else:
-        skin_info['preview'] = None
-    # Adding skin to skins
-    skins[skin_id] = skin_info
-  # Returning skins
-  if skins == {}:
+        skin['preview'] = None
+    skins.append(skin)
+  if len(skins) == 0:
     return None
-  else:
-    return skins
+  return skins
+
+def get_layouts(path: str, include: list) -> list:
+  layouts_dir = f"{path}/ui"
+  if not drawer.is_folder(layouts_dir):
+    return None
+  layouts = []
+  for folder in drawer.get_folders(layouts_dir):
+    layout = {'id': drawer.get_basename(folder),'path': folder}
+    # Adding ui json stuff
+    ui_json = f"{folder}/ui_track.json"
+    if 'ui' in include:
+      if drawer.is_file(ui_json):
+        # Is likely to fail due to UnicodeDecodeError
+        # TODO: do something about that
+        layout['ui'] = notebook.read_json(ui_json)
+      else:
+        layout['ui'] = None
+    # Adding a preview
+    if 'preview' in include:
+      preview_file = f"{folder}/preview.png"
+      if drawer.is_file(preview_file):
+        layout['preview'] = preview_file
+      else:
+        layout['preview'] = None
+    layouts.append(layout)
+  if len(layouts) == 0:
+    return None
+  return layouts
 
 # Gathers info about the mods.
 class InfoGatherer:
@@ -177,7 +201,7 @@ class InfoGatherer:
     return mod_info, origin
 
   # Available include options:
-  # ['size', 'ui', 'flag', 'preview', 'skins', 'outline']
+  # ['size', 'ui', 'flag', 'preview', 'skins', 'layouts', 'outline']
   # Note: option 'flag' depends on, and is stored in 'ui'
   def get_track_info(self, mod_path: str, include: list = []) -> dict:
     #TODO: add layouts info
@@ -211,6 +235,8 @@ class InfoGatherer:
     ## Getting skins
     if 'skins' in include:
       mod_info['skins'] = get_skins(mod_path, include)
+    if 'layouts' in include:
+      mod_info['layouts'] = get_layouts(mod_path, include)
     # TODO: add layout info
     # Returning
     return mod_info, origin

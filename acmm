@@ -213,7 +213,7 @@ class CLI:
     typewriter.print(f"Deleted {num_of_mods} mods.")
 
   # Helper functions
-  def print_mod_categories(self, mod_categories):
+  def print_mod_categories(self, mod_categories: dict):
     for category in mod_categories:
       category_info = mod_categories.get(category)
       title = category_info.get('title')
@@ -221,7 +221,7 @@ class CLI:
       size = category_info.get('size')
       self.print_mod_category(title, mods, size)
 
-  def print_mod_category(self, title: str, mods: dict, filesize: int):
+  def print_mod_category(self, title: str, mods: list, filesize: int):
     if filesize is not None:
       filesize = drawer.get_readable_filesize(filesize)
       units = filesize[1].upper()
