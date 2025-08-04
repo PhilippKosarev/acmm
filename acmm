@@ -246,39 +246,51 @@ class CLI:
 
 # Inputs/Commands/Options configuration
 app = "acmm"
-description = "A mod manager for Assetto Corsa"
+description = "A mod manager for Assetto Corsa."
 # help = "" # If you wish to set your own help page text
 commands = {
-  'list':     {'function': CLI.list,
-  'description': 'Lists installed mods'},
-
-  'install':  {'function': CLI.install,
-  'description': 'Installs the specified mod'},
-
-  'remove':   {'function': CLI.remove,
-  'description': 'Removes specified mods'},
+  'list': {
+    'function': CLI.list,
+    'description': 'Lists installed mods',
+  },
+  'install': {
+    'function': CLI.install,
+    'description': 'Installs the specified mod',
+  },
+  'remove': {
+    'function': CLI.remove,
+    'description': 'Removes specified mods',
+  },
 }
 options = {
-  'cars':      {'long': ['car', 'cars'],           'short': ['c'],
-  'description': 'Only list/remove cars'},
-
-  'tracks':    {'long': ['track', 'tracks'],       'short': ['t'],
-  'description': 'Only list/remove tracks'},
-
-  'ppfilters': {'long': ['ppfilter', 'ppfilters'], 'short': ['f'],
-  'description': 'Only list/remove PP filters'},
-
-  'weather':   {'long': ['weather'],               'short': ['w'],
-  'description': 'Only list/remove weather'},
-
-  'apps':      {'long': ['app', 'apps'],           'short': ['a'],
-  'description': 'Only list/remove apps'},
-
-  'all':       {'long': ['all'],                   'short': ['A'],
-  'description': 'Do not filter out Kunos assets'},
-
-  'kunos':     {'long': ['kunos'],                 'short': ['k'],
-  'description': 'Filter out non Kunos assets'},
+  'cars': {
+    'long': ['car', 'cars'], 'short': ['c'],
+    'description': 'Only list/remove cars',
+  },
+  'tracks': {
+    'long': ['track', 'tracks'], 'short': ['t'],
+    'description': 'Only list/remove tracks',
+  },
+  'ppfilters': {
+    'long': ['ppfilter', 'ppfilters'], 'short': ['f'],
+    'description': 'Only list/remove PP filters',
+  },
+  'weather': {
+    'long': ['weather'], 'short': ['w'],
+    'description': 'Only list/remove weather',
+  },
+  'apps': {
+    'long': ['app', 'apps'], 'short': ['a'],
+    'description': 'Only list/remove apps',
+  },
+  'all': {
+    'long': ['all'], 'short': ['A'],
+    'description': 'Do not filter out Kunos assets',
+  },
+  'kunos': {
+    'long': ['kunos'], 'short': ['k'],
+    'description': 'Filter out non Kunos assets',
+  },
 }
 help = captain.generate_help(app, description, commands, options)
 
