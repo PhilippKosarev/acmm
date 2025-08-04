@@ -189,7 +189,7 @@ class CLI:
     installed_mods = mod_installer.install_mods(installable_mods, AC_DIR, print_install_progress)
     typewriter.print(f"Installed {len(installed_mods)} mods.")
 
-  # Interface to remove mods
+  # Interface to remove mods.
   def remove(self, search_term: str):
     mod_categories = get_mods()
     # Removing non matching mods

@@ -88,7 +88,6 @@ class ModFinder:
     return mod_paths
 
   def find_weather(self, path: str) -> list:
-    # Getting mod paths
     files = drawer.get_files_recursive(path)
     weather_files = clipboard.match_suffix(files, "/weather.ini")
     weather_folders = clipboard.deduplicate(drawer.get_parents(weather_files))
