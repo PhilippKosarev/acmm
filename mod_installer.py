@@ -59,7 +59,6 @@ installable_mod_categories = [
     'install-mode': 'clean',
   },
   # (mod_finder.find_extensions, False),
-  # (mod_finder.find_gui, False),
   # (mod_finder.find_car_skins, False),
   # (mod_finder.find_track_addons, False),
 ]

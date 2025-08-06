@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # Imports
-from libjam import captain, drawer, typewriter, notebook, flashcard
+from libjam import captain, drawer, typewriter, notebook, clipboard, flashcard
 from multiprocessing import Process, SimpleQueue
 import sys, os, time
 
@@ -149,6 +149,12 @@ def print_mod_category(title: str, mods: list, filesize: int):
   mods_columns = typewriter.list_to_columns(mod_ids, None, 2)
   typewriter.print(f"{mods_columns}\n")
 
+def clean_temp_dir():
+  if drawer.exists(TEMP):
+    typewriter.print_status("Cleaning temp dir...")
+    drawer.delete_folder(TEMP)
+  drawer.make_folder(TEMP)
+
 # The command line interface for acmm.
 class CLI:
 
@@ -158,29 +164,39 @@ class CLI:
     print_mod_categories(mod_categories)
 
   # Interface to install mods.
-  def install(self, path: str):
-    # Unpacking
-    if drawer.get_filetype(path) != 'folder':
-      if not drawer.is_archive_supported(path):
-        print('Unsupported archive type.')
-        return
-      if drawer.exists(TEMP):
-        typewriter.print_status("Cleaning temp dir...")
-        drawer.delete_folder(TEMP)
-      drawer.make_folder(TEMP)
-      filename = drawer.get_basename(path)
-      def print_extract_progress(done: int, todo: int):
-        typewriter.print_progress(f"Extracting '{filename}'", done, todo)
-      typewriter.print_status("Extracting archive...")
-      unpacked = drawer.extract_archive(path, TEMP, progress_function=print_extract_progress)
-    else:
-      unpacked = path
+  def install(self, *args):
+    try:
+      clean_temp_dir()
+      unpacked = []
+      # Processing mod paths
+      for path in args:
+        # Unpacking
+        if drawer.get_filetype(path) != 'folder':
+          if not drawer.is_archive_supported(path):
+            return print('Unsupported filetype.')
+          basename = drawer.get_basename(path)
+          def print_extract_progress(done: int, todo: int):
+            typewriter.print_progress(f"Extracting '{basename}'", done, todo)
+          typewriter.print_status("Extracting archive...")
+          unpacked.append(drawer.extract_archive(path, TEMP, progress_function=print_extract_progress))
+        else:
+          unpacked.append(path)
+      unpacked = clipboard.deduplicate(unpacked)
+    except KeyboardInterrupt:
+      return typewriter.print('Archive extraction cancelled.')
     # Searching for mods
     typewriter.print_status('Searching for mods...')
-    installable_mods = mod_installer.find_installable_mods(unpacked, include_info)
+    installable_mods = {}
+    for path in unpacked:
+      found_categories = mod_installer.find_installable_mods(path, include_info)
+      for found_category in found_categories:
+        found_mods = found_categories.get(found_category)
+        if found_category in installable_mods:
+          installable_mods[found_category] += found_mods
+        else:
+          installable_mods[found_category] = found_mods
     if len(installable_mods) == 0:
-      typewriter.print('No mods found.')
-      return
+      return typewriter.print('No mods found.')
     for category in installable_mods:
       mods = installable_mods.get(category)
       size = 0
@@ -198,14 +214,15 @@ class CLI:
     except KeyboardInterrupt:
         return typewriter.print("Installation cancelled.")
     # Installing mods
-    def print_install_progress(current_mod: dict, done: int, todo: int):
-      current_mod = current_mod.get('mod_id')
-      typewriter.print_progress(f"Installing '{current_mod}'", done, todo)
     all_installable_mods = []
     for category in installable_mods:
       mods = installable_mods.get(category)
       all_installable_mods += mods
+    def print_install_progress(current_mod: dict, done: int, todo: int):
+      current_mod = current_mod.get('mod_id')
+      typewriter.print_progress(f"Installing '{current_mod}'", done, todo)
     installed_mods = mod_installer.install_mods(all_installable_mods, AC_DIR, print_install_progress)
+    clean_temp_dir()
     typewriter.print(f"Installed {len(installed_mods)} mods.")
 
   # Interface to remove mods.
