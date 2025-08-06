@@ -1,4 +1,4 @@
-# ACMM
+# acmm
 A mod manager for Assetto Corsa. Written in Python, utilises [libjam](https://github.com/PhilippKosarev/libjam).
 
 ## Features
@@ -7,19 +7,16 @@ A mod manager for Assetto Corsa. Written in Python, utilises [libjam](https://gi
 - Variety of filters to search through your large mod collection
 
 ## Mod support
-ACMM allows you to automatically install:
+acmm supports installing:
 - Cars
-- Car skins
 - Tracks
-- Track add-ons
-- Python apps
-- Lua apps
 - PP Filters
 - Weather
+- Python and Lua apps
+- Custom Shaders Patch
+- SOL
 
-It's also able to fully, and automatically, install SOL.
-
-## How to run ACMM
+## How to run acmm
 ```
 pip install libjam
 git clone 'https://github.com/PhilippKosarev/acmm'
