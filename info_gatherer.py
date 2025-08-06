@@ -310,3 +310,16 @@ class InfoGatherer:
       mod_info['preview'] = get_existing(image_file)
     # Returning
     return mod_info, origin
+
+  # Available include options:
+  # ['size']
+  def get_generic_info(self, mod_path: str, include: list = []) -> dict:
+    # Establishing basic mod properties
+    mod_id = drawer.get_basename(mod_path)
+    mod_info = {'mod_id': mod_id, 'path': mod_path}
+    # Getting optional information
+    ## Getting filesize info
+    if 'size' in include:
+      mod_info['size'] = drawer.get_filesize(mod_path)
+    # Returning
+    return mod_info, 'mod'

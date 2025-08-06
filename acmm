@@ -69,6 +69,7 @@ mod_categories = [
   # Installable-only categories
   { 'title': 'Python Apps', 'key': 'python-apps' },
   { 'title': 'Lua Apps', 'key': 'lua-apps' },
+  { 'title': 'GUI Addons', 'key': 'gui-addons' },
 ]
 
 include_info = ['size']
