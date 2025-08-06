@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 
 # Imports
-import sys, os, time
-from multiprocessing import Process, SimpleQueue
 from libjam import captain, drawer, typewriter, notebook, flashcard
+from multiprocessing import Process, SimpleQueue
+import sys, os, time
 
 # Internal imports
+from data import data
 from mod_fetcher import ModFetcher
 mod_fetcher = ModFetcher()
 from mod_installer import ModInstaller
 mod_installer = ModInstaller()
-from data import data
 
 # Handling config
 HOME = drawer.get_home()
@@ -66,6 +66,9 @@ mod_categories = [
     'title': 'Apps', 'key': 'apps',
     'get_function': mod_fetcher.fetch_apps
   },
+  # Installable-only categories
+  { 'title': 'Python Apps', 'key': 'python-apps' },
+  { 'title': 'Lua Apps', 'key': 'lua-apps' },
 ]
 
 include_info = ['size']
@@ -95,7 +98,10 @@ def get_mods() -> dict:
   queue = SimpleQueue()
   for mod_category in mod_categories:
     key = mod_category.get('key')
-    if not options.get(key).get('enabled'):
+    if key in options:
+      if not options.get(key).get('enabled'):
+        continue
+    if 'get_function' not in mod_category:
       continue
     result_dict[key] = mod_category
     process = Process(target=get_category_mods, args=(key, mod_category, queue))
@@ -153,17 +159,18 @@ class CLI:
   # Interface to install mods.
   def install(self, path: str):
     # Unpacking
-    typewriter.print_status("Processing...")
     if drawer.get_filetype(path) != 'folder':
       if not drawer.is_archive_supported(path):
         print('Unsupported archive type.')
         return
       if drawer.exists(TEMP):
+        typewriter.print_status("Cleaning temp dir...")
         drawer.delete_folder(TEMP)
       drawer.make_folder(TEMP)
       filename = drawer.get_basename(path)
       def print_extract_progress(done: int, todo: int):
         typewriter.print_progress(f"Extracting '{filename}'", done, todo)
+      typewriter.print_status("Extracting archive...")
       unpacked = drawer.extract_archive(path, TEMP, progress_function=print_extract_progress)
     else:
       unpacked = path
@@ -173,10 +180,17 @@ class CLI:
     if len(installable_mods) == 0:
       typewriter.print('No mods found.')
       return
-    size = 0
-    for mod in installable_mods:
-      size += mod.get('size')
-    print_mod_category('Found mods', installable_mods, size)
+    for category in installable_mods:
+      mods = installable_mods.get(category)
+      size = 0
+      for mod in mods:
+        size += mod.get('size')
+      # Getting category title
+      title = category
+      for item in mod_categories:
+        if item.get('key') == category:
+          title = item.get('title')
+      print_mod_category(title, mods, size)
     try:
       if not flashcard.yn_prompt("Install listed mods?"):
         return typewriter.print("Installation cancelled.")
@@ -186,7 +200,11 @@ class CLI:
     def print_install_progress(current_mod: dict, done: int, todo: int):
       current_mod = current_mod.get('mod_id')
       typewriter.print_progress(f"Installing '{current_mod}'", done, todo)
-    installed_mods = mod_installer.install_mods(installable_mods, AC_DIR, print_install_progress)
+    all_installable_mods = []
+    for category in installable_mods:
+      mods = installable_mods.get(category)
+      all_installable_mods += mods
+    installed_mods = mod_installer.install_mods(all_installable_mods, AC_DIR, print_install_progress)
     typewriter.print(f"Installed {len(installed_mods)} mods.")
 
   # Interface to remove mods.

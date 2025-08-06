@@ -1,6 +1,7 @@
 # Imports
 from libjam import drawer, notebook
 import pycountry
+
 # Internal imports
 from data import data
 

@@ -9,7 +9,6 @@ info_gatherer = InfoGatherer()
 
 # tuple format: (find_function, delete_mod_before_installing?)
 installable_mod_categories = [
-  # Cars
   {
     'category-id': 'cars',
     'find-function': mod_finder.find_cars,
@@ -17,7 +16,6 @@ installable_mod_categories = [
     'install-dir': data.get('asset-paths').get('cars'),
     'install-mode': 'clean',
   },
-  # Tracks
   {
     'category-id': 'tracks',
     'find-function': mod_finder.find_tracks,
@@ -25,7 +23,6 @@ installable_mod_categories = [
     'install-dir': data.get('asset-paths').get('tracks'),
     'install-mode': 'clean',
   },
-  # PP Filters
   {
     'category-id': 'ppfilters',
     'find-function': mod_finder.find_ppfilters,
@@ -33,7 +30,6 @@ installable_mod_categories = [
     'install-dir': data.get('asset-paths').get('ppfilters'),
     'install-mode': 'clean',
   },
-  # Weather
   {
     'category-id': 'weather',
     'find-function': mod_finder.find_weather,
@@ -41,7 +37,6 @@ installable_mod_categories = [
     'install-dir': data.get('asset-paths').get('weather'),
     'install-mode': 'clean',
   },
-  # Apps
   {
     'category-id': 'python-apps',
     'find-function': mod_finder.find_python_apps,
@@ -56,6 +51,13 @@ installable_mod_categories = [
     'install-dir': data.get('asset-paths').get('apps') + '/lua',
     'install-mode': 'clean',
   },
+  # {
+  #   'category-id': 'gui-addons',
+  #   'find-function': mod_finder.find_gui,
+  #   'info-function': info_gatherer.get_gui_info,
+  #   'install-dir': data.get('asset-paths').get('apps') + '/lua',
+  #   'install-mode': 'clean',
+  # },
   # (mod_finder.find_extensions, False),
   # (mod_finder.find_gui, False),
   # (mod_finder.find_car_skins, False),
@@ -72,7 +74,8 @@ class ModInstaller:
     if not drawer.is_folder(directory):
       raise NotADirectoryError(f"Path '{directory}' does not lead to a directory.")
     # Getting installable mods
-    installable_mods = []
+    all_installable_mods = []
+    installable_mods_by_category = {}
     for item in installable_mod_categories:
       # Getting info
       find_function = item.get('find-function')
@@ -89,9 +92,22 @@ class ModInstaller:
         mod_info['install-mode'] = install_mode
         found_mods.append(mod_info)
       # Filtering out duplicates
-      found_mods = clipboard.filter(found_mods, installable_mods)
-      installable_mods += found_mods
-    return installable_mods
+      marked_mods = []
+      for found_mod in found_mods:
+        found_mod_path = found_mod.get('path').removeprefix(directory)
+        for installable_mod in all_installable_mods:
+          installable_mod_path = installable_mod.get('path').removeprefix(directory)
+          if found_mod_path == installable_mod_path:
+            marked_mods.append(found_mod)
+      for marked_mod in marked_mods:
+        found_mods.remove(marked_mod)
+      # Adding filtered found mods
+      if len(found_mods) == 0:
+        continue
+      all_installable_mods += found_mods
+      category_id = item.get('category-id')
+      installable_mods_by_category[category_id] = found_mods
+    return installable_mods_by_category
 
   def install_mods(self, mods: list, AC_DIR: str, progress_function = None):
     n_of_mods = len(mods)

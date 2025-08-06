@@ -109,9 +109,8 @@ class ModFinder:
     if mod_paths[0] != '':
       mod_paths = drawer.get_folders(mod_paths[0])
 
-  def find_gui(self, folder: str):
-    # Getting mod paths
-    files = drawer.get_files_recursive(folder)
+  def find_gui(self, path: str) -> list:
+    files = drawer.get_files_recursive(path)
     png_files = clipboard.match_suffix(files, ".png")
     png_folders = clipboard.deduplicate(drawer.get_parents(png_files))
     guis = clipboard.deduplicate(drawer.get_parents(png_folders))
