@@ -1,8 +1,9 @@
 # Imports
 from libjam import drawer
+
 # Internal imports
-from data import data
-from info_gatherer import InfoGatherer
+from .data import data
+from .info_gatherer import InfoGatherer
 info_gatherer = InfoGatherer()
 
 # Helper functions
@@ -20,6 +21,7 @@ def get_origins():
   return {'kunos': [], 'dlc': [], 'mod': []}
 
 # Fetches the installed mods.
+# For informatino on 'include' options look at InfoGatherer.
 class ModFetcher:
 
   # Returns installed cars.

@@ -3,7 +3,7 @@ from libjam import drawer, notebook
 import pycountry
 
 # Internal imports
-from data import data
+from .data import data
 
 # Shorthand vars
 kunos_assets = data.get('kunos-assets')
@@ -225,7 +225,6 @@ class InfoGatherer:
   # ['size', 'ui', 'flag', 'preview', 'skins', 'layouts', 'outline']
   # Note: option 'flag' depends on, and is stored in 'ui'
   def get_track_info(self, mod_path: str, include: list = []) -> dict:
-    #TODO: add layouts info
     # Establishing basic mod properties
     mod_id = drawer.get_basename(mod_path)
     mod_info = {'mod_id': mod_id, 'path': mod_path}
@@ -258,7 +257,6 @@ class InfoGatherer:
       mod_info['skins'] = get_skins(mod_path, include)
     if 'layouts' in include:
       mod_info['layouts'] = get_layouts(mod_path, include)
-    # TODO: add layout info
     # Returning
     return mod_info, origin
 

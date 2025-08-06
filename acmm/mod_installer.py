@@ -1,10 +1,11 @@
 # Imports
 from libjam import drawer, clipboard
+
 # Internal imports
-from data import data
-from mod_finder import ModFinder
+from .data import data
+from .mod_finder import ModFinder
 mod_finder = ModFinder()
-from info_gatherer import InfoGatherer
+from .info_gatherer import InfoGatherer
 info_gatherer = InfoGatherer()
 
 # tuple format: (find_function, delete_mod_before_installing?)

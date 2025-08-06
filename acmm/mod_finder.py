@@ -1,7 +1,8 @@
 # Jamming imports
 from libjam import drawer, clipboard
+
 # Internal imports
-from info_gatherer import InfoGatherer
+from .info_gatherer import InfoGatherer
 info_gatherer = InfoGatherer()
 
 # Helper functions

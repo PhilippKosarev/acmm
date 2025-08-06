@@ -6,10 +6,8 @@ from multiprocessing import Process, SimpleQueue
 import sys, os, time
 
 # Internal imports
-from data import data
-from mod_fetcher import ModFetcher
+from acmm import data, ModFetcher, ModInstaller
 mod_fetcher = ModFetcher()
-from mod_installer import ModInstaller
 mod_installer = ModInstaller()
 
 # Handling config
@@ -283,8 +281,8 @@ class CLI:
     typewriter.print(f"Deleted {num_of_mods} mods.")
 
 # Inputs/Commands/Options configuration
-app = "acmm"
-description = "A mod manager for Assetto Corsa."
+app = 'acmm'
+description = 'A mod manager for Assetto Corsa.'
 # help = "" # If you wish to set your own help page text
 commands = {
   'list': {
@@ -293,11 +291,11 @@ commands = {
   },
   'install': {
     'function': CLI.install,
-    'description': 'Installs the specified mod',
+    'description': 'Installs the specified mod(s)',
   },
   'remove': {
     'function': CLI.remove,
-    'description': 'Removes specified mods',
+    'description': 'Removes specified mod(s)',
   },
 }
 options = {

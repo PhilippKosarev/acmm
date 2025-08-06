@@ -7,7 +7,7 @@ A mod manager for Assetto Corsa. Written in Python, utilises [libjam](https://gi
 - Variety of filters to search through your large mod collection
 
 ## Mod support
-acmm supports installing:
+Here are some of the mods/mod types that acmm can install:
 - Cars
 - Tracks
 - PP Filters
