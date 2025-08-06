@@ -126,23 +126,16 @@ def print_mod_categories(mod_categories: dict):
     category_info = mod_categories.get(category)
     title = category_info.get('title')
     mods = category_info.get('mods')
-    size = category_info.get('size')
-    print_mod_category(title, mods, size)
+    print_mod_category(title, mods)
 
-def print_mod_category(title: str, mods: list, filesize: int):
-  if filesize is not None:
-    filesize = drawer.get_readable_filesize(filesize)
-    units = filesize[1].upper()
-    filesize = round(filesize[0], 1)
-    filesize_string = f"{filesize} {units}"
-  else:
-    filesize_string = "Unknown"
-  entries = len(mods)
-  # Quitting if there's nothing to print
-  if entries == 0:
-    return
-  # Printing
-  typewriter.print(f"{typewriter.bolden(title)}: ( {entries} | {filesize_string} )")
+def print_mod_category(title: str, mods: list):
+  size = 0
+  for mod in mods:
+    size += mod.get('size')
+  size, size_units, _ = drawer.get_readable_filesize(size)
+  size = round(size, 1)
+  size_units = size_units.upper()
+  typewriter.print(f"{typewriter.bolden(title)}: ( {len(mods)} | {size} {size_units} )")
   mod_ids = []
   for mod in mods:
     mod_ids.append(mod.get('mod_id'))
@@ -199,15 +192,12 @@ class CLI:
       return typewriter.print('No mods found.')
     for category in installable_mods:
       mods = installable_mods.get(category)
-      size = 0
-      for mod in mods:
-        size += mod.get('size')
       # Getting category title
       title = category
       for item in mod_categories:
         if item.get('key') == category:
           title = item.get('title')
-      print_mod_category(title, mods, size)
+      print_mod_category(title, mods)
     try:
       if not flashcard.yn_prompt("Install listed mods?"):
         return typewriter.print("Installation cancelled.")
@@ -231,58 +221,63 @@ class CLI:
     typewriter.print(f"Installed {len(installed_mods)} mods.")
 
   # Interface to remove mods.
-  def remove(self, search_term: str):
+  def remove(self, *args):
+    # Fetching mods
     mod_categories = get_mods()
-    # Removing non matching mods
-    for category in mod_categories:
-      non_matching = []
-      mods = mod_categories.get(category).get('mods')
-      for mod_id in mods:
-        if not search_term in mod_id:
-          non_matching.append(mod_id)
-      for mod_id in non_matching:
-        mods.pop(mod_id)
-    # Removing empty categories
+    # Getting matching mods
     empty_categories = []
     for category in mod_categories:
       mods = mod_categories.get(category).get('mods')
-      if len(mods) == 0:
+      matching_mods = []
+      for mod in mods:
+        mod_id = mod.get('mod_id')
+        for search_term in args:
+          if search_term.lower() in mod_id:
+            matching_mods.append(mod)
+      if len(matching_mods) > 0:
+        mod_categories[category]['mods'] = matching_mods
+      else:
         empty_categories.append(category)
+    # Removing empty categories
     for category in empty_categories:
       mod_categories.pop(category)
     # Checking if any match
     if len(mod_categories) == 0:
-      print(f"No mods found matching '{search_term}'.")
-      return
+      return print(f"No mods found matching '{search_term}'.")
     print_mod_categories(mod_categories)
-    if flashcard.yn_prompt('Remove the listed mods?') is False:
-      print('Deletion aborted.')
-      return
-    marked_mods = {}
+    try:
+      if not flashcard.yn_prompt('Remove the listed mods?'):
+        return typewriter.print('Deletion aborted.')
+    except KeyboardInterrupt:
+      return typewriter.print('Deletion aborted.')
+    # Getting all mods into a list
+    all_mods = []
     for category in mod_categories:
-      category_info = mod_categories.get(category)
-      mods = category_info.get('mods')
-      for mod_id in mods:
-        mod_info = mods.get(mod_id)
-        marked_mods[mod_id] = mod_info
-    num_of_mods = len(marked_mods)
+      mods = mod_categories.get(category).get('mods')
+      all_mods += mods
+    num_of_mods = len(all_mods)
+    # Deleting mods
     if num_of_mods > 1:
       delay = 1 / num_of_mods
     else:
       delay = 0.3
-    last_deleted = None
-    for mod_id in marked_mods:
-      mod_info = marked_mods.get(mod_id)
+    deleted_mods = []
+    for mod in all_mods:
+      mod_id = mod.get('mod_id')
+      mod_path = mod.get('path')
       try:
         typewriter.print_status(f"Deleting '{mod_id}'...")
-        mod_path = mod_info.get('path')
         time.sleep(delay)
         drawer.trash_path(mod_path)
-        last_deleted = mod_id
+        deleted_mods.append(mod)
       except KeyboardInterrupt:
-        typewriter.print('Deletion aborted.')
-        typewriter.print(f"Last deleted: '{last_deleted}'.")
-        exit()
+        typewriter.print(f"Deletion aborted.")
+        if len(deleted_mods) > 0:
+          last_deleted = deleted_mods[-1].get('mod_id')
+          typewriter.print(f"Deleted {len(deleted_mods)} mods. Last deleted: '{last_deleted}'.")
+        else:
+          typewriter.print('No mod was deleted.')
+        return
     typewriter.print(f"Deleted {num_of_mods} mods.")
 
 # Inputs/Commands/Options configuration
