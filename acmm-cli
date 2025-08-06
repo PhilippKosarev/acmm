@@ -281,8 +281,8 @@ class CLI:
     typewriter.print(f"Deleted {num_of_mods} mods.")
 
 # Inputs/Commands/Options configuration
-app = 'acmm'
-description = 'A mod manager for Assetto Corsa.'
+app = 'acmm-cli'
+description = 'A command line mod manager for Assetto Corsa.'
 # help = "" # If you wish to set your own help page text
 commands = {
   'list': {
