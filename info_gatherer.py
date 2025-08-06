@@ -161,6 +161,26 @@ def get_layouts(path: str, include: list) -> list:
 class InfoGatherer:
 
   # Available include options:
+  # ['size', 'ui']
+  def get_csp_info(self, mod_path: str, include: list = []) -> dict:
+    # Establishing basic mod properties
+    mod_info = {'path': mod_path}
+    ui_info = notebook.read_ini(
+      mod_path+'/extension/config/data_manifest.ini', allow_duplicates = True
+    )
+    csp_version = ui_info.get('VERSION').get('shaders_patch')
+    mod_info['mod_id'] = 'csp_v' + csp_version
+    # Getting optional information
+    ## Getting filesize info
+    if 'size' in include:
+      mod_info['size'] = drawer.get_filesize(mod_path)
+    ## Getting UI info
+    if 'ui' in include:
+      mod_info['ui'] = ui_info
+    # Returning
+    return mod_info, 'mod'
+
+  # Available include options:
   # ['size', 'ui', 'flag', 'preview', 'skins', 'badge', 'logo']
   # Note: option 'flag' depends on, and is stored in 'ui'
   def get_car_info(self, mod_path: str, include: list = []) -> dict:

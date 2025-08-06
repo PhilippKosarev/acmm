@@ -67,6 +67,7 @@ mod_categories = [
     'get_function': mod_fetcher.fetch_apps
   },
   # Installable-only categories
+  { 'title': 'Custom Shaders Patch', 'key': 'csp' },
   { 'title': 'Python Apps', 'key': 'python-apps' },
   { 'title': 'Lua Apps', 'key': 'lua-apps' },
   { 'title': 'GUI Addons', 'key': 'gui-addons' },
@@ -158,25 +159,25 @@ class CLI:
 
   # Interface to install mods.
   def install(self, *args):
-    try:
-      clean_temp_dir()
-      unpacked = []
-      # Processing mod paths
-      for path in args:
-        # Unpacking
-        if drawer.get_filetype(path) != 'folder':
-          if not drawer.is_archive_supported(path):
-            return print('Unsupported filetype.')
-          basename = drawer.get_basename(path)
-          def print_extract_progress(done: int, todo: int):
-            typewriter.print_progress(f"Extracting '{basename}'", done, todo)
-          typewriter.print_status("Extracting archive...")
+    clean_temp_dir()
+    unpacked = []
+    # Processing mod paths
+    for path in args:
+      # Unpacking
+      if drawer.get_filetype(path) != 'folder':
+        if not drawer.is_archive_supported(path):
+          return print('Unsupported filetype.')
+        basename = drawer.get_basename(path)
+        def print_extract_progress(done: int, todo: int):
+          typewriter.print_progress(f"Extracting '{basename}'", done, todo)
+        typewriter.print_status(f"Extracting '{basename}'...")
+        try:
           unpacked.append(drawer.extract_archive(path, TEMP, progress_function=print_extract_progress))
-        else:
-          unpacked.append(path)
-      unpacked = clipboard.deduplicate(unpacked)
-    except KeyboardInterrupt:
-      return typewriter.print('Archive extraction cancelled.')
+        except KeyboardInterrupt:
+          return typewriter.print('Archive extraction cancelled.')
+      else:
+        unpacked.append(path)
+    unpacked = clipboard.deduplicate(unpacked)
     # Searching for mods
     typewriter.print_status('Searching for mods...')
     installable_mods = {}

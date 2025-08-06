@@ -10,6 +10,13 @@ info_gatherer = InfoGatherer()
 # tuple format: (find_function, delete_mod_before_installing?)
 installable_mod_categories = [
   {
+    'category-id': 'csp',
+    'find-function': mod_finder.find_csp,
+    'info-function': info_gatherer.get_csp_info,
+    'install-dir': '',
+    'install-mode': 'csp',
+  },
+  {
     'category-id': 'cars',
     'find-function': mod_finder.find_cars,
     'info-function': info_gatherer.get_car_info,
@@ -90,13 +97,13 @@ class ModInstaller:
         mod_info['install-dir'] = install_dir
         mod_info['install-mode'] = install_mode
         found_mods.append(mod_info)
-      # Filtering out duplicates
+      # Filtering out already found mods
       marked_mods = []
       for found_mod in found_mods:
         found_mod_path = found_mod.get('path').removeprefix(directory)
         for installable_mod in all_installable_mods:
           installable_mod_path = installable_mod.get('path').removeprefix(directory)
-          if found_mod_path == installable_mod_path:
+          if found_mod_path.startswith(installable_mod_path):
             marked_mods.append(found_mod)
       for marked_mod in marked_mods:
         found_mods.remove(marked_mod)
@@ -121,13 +128,22 @@ class ModInstaller:
       if progress_function is not None:
         progress_function(mod, iteration + 1, n_of_mods)
       # Installing
-      install_final_path = f"{install_dir}/{drawer.get_basename(mod_path)}"
       if install_mode == 'clean':
+        install_final_path = f"{install_dir}/{drawer.get_basename(mod_path)}"
         if drawer.exists(install_final_path):
           drawer.delete_path(install_final_path)
+        drawer.copy(mod_path, install_final_path)
+      elif  install_mode == 'csp':
+        # Copying dwrite
+        if drawer.exists(AC_DIR+'/dwrite.dll'):
+          drawer.delete_path(AC_DIR+'/dwrite.dll')
+        drawer.copy(mod_path+'/dwrite.dll', AC_DIR+'/dwrite.dll')
+        # Copying extension
+        if drawer.exists(AC_DIR+'/extension'):
+          drawer.delete_path(AC_DIR+'/extension')
+        drawer.copy(mod_path+'/extension', AC_DIR+'/extension')
       else:
         raise NotImplementedError(f"Install mode '{install_mode}' is not implemented.")
-      drawer.copy(mod_path, install_final_path)
       iteration += 1
       installed_mods.append(mod)
     return installed_mods

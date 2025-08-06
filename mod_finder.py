@@ -96,8 +96,7 @@ class ModFinder:
       return []
     return weather_folders
 
-  def find_extensions(self, folder: str, include: list = []) -> list:
-    # Getting mod paths
+  def find_extensions(self, folder: str) -> list:
     files = drawer.get_files_recursive(folder)
     lua_files = clipboard.match_suffix(files, ".lua")
     lua_folders = clipboard.deduplicate(drawer.get_parents(lua_files))
@@ -108,6 +107,22 @@ class ModFinder:
       return []
     if mod_paths[0] != '':
       mod_paths = drawer.get_folders(mod_paths[0])
+
+  def find_csp(self, path: str) -> list:
+    folders = drawer.get_folders_recursive(path)
+    extension_folder = None
+    for folder in folders:
+      if drawer.get_basename(folder) == 'extension':
+        extension_folder = folder
+    if extension_folder is None:
+      return []
+    parent_folder = drawer.get_parent(extension_folder)
+    parent_folder_files = drawer.get_files(parent_folder)
+    for file in parent_folder_files:
+      basename = drawer.get_basename(file)
+      if basename == 'dwrite.dll':
+        return [parent_folder]
+    return []
 
   def find_gui(self, path: str) -> list:
     files = drawer.get_files_recursive(path)
