@@ -212,7 +212,7 @@ class CLI:
       if not flashcard.yn_prompt("Install listed mods?"):
         return typewriter.print("Installation cancelled.")
     except KeyboardInterrupt:
-        return typewriter.print("Installation cancelled.")
+      return typewriter.print("Installation cancelled.")
     # Installing mods
     all_installable_mods = []
     for category in installable_mods:
@@ -221,7 +221,12 @@ class CLI:
     def print_install_progress(current_mod: dict, done: int, todo: int):
       current_mod = current_mod.get('mod_id')
       typewriter.print_progress(f"Installing '{current_mod}'", done, todo)
-    installed_mods = mod_installer.install_mods(all_installable_mods, AC_DIR, print_install_progress)
+    try:
+      installed_mods = mod_installer.install_mods(all_installable_mods, AC_DIR, print_install_progress)
+    except KeyboardInterrupt:
+      return typewriter.print(
+        'Installation aborted half-way through. Some mods may have been installed already.'
+      )
     clean_temp_dir()
     typewriter.print(f"Installed {len(installed_mods)} mods.")
 
