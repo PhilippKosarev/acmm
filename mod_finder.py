@@ -14,6 +14,9 @@ def search_for_files(path: str, filename: str) -> list:
       matching_files.append(file)
   return matching_files
 
+class Found(Exception):
+  pass
+
 # Finds mods.
 class ModFinder:
 
@@ -96,18 +99,6 @@ class ModFinder:
       return []
     return weather_folders
 
-  def find_extensions(self, folder: str) -> list:
-    files = drawer.get_files_recursive(folder)
-    lua_files = clipboard.match_suffix(files, ".lua")
-    lua_folders = clipboard.deduplicate(drawer.get_parents(lua_files))
-    extensions = clipboard.deduplicate(drawer.get_parents(lua_folders))
-    mod_paths = clipboard.deduplicate(drawer.get_parents(extensions))
-    mod_paths = clipboard.match_suffix(mod_paths, '/extension')
-    if len(mod_paths) != 1:
-      return []
-    if mod_paths[0] != '':
-      mod_paths = drawer.get_folders(mod_paths[0])
-
   def find_csp(self, path: str) -> list:
     folders = drawer.get_folders_recursive(path)
     extension_folder = None
@@ -123,6 +114,29 @@ class ModFinder:
       if basename == 'dwrite.dll':
         return [parent_folder]
     return []
+
+  def find_csp_addons(self, path: str) -> list:
+    folders = drawer.get_folders_recursive(path)
+    extension_folder = None
+    for folder in folders:
+      basename = drawer.get_basename(folder)
+      if basename == 'extension':
+        extension_folder = folder
+    if extension_folder is None:
+      return []
+    extension_addons = []
+    extension_folders = drawer.get_folders(extension_folder)
+    for folder in extension_folders:
+      files = drawer.get_files_recursive(folder)
+      try:
+        for file in files:
+          file_extension = drawer.get_filetype(file)
+          if file_extension == 'lua':
+            raise Found
+      except Found:
+        extension_addons.append(folder)
+        continue
+    return extension_addons
 
   def find_gui(self, path: str) -> list:
     files = drawer.get_files_recursive(path)

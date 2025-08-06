@@ -52,25 +52,26 @@ mod_categories = [
   },
   {
     'title': 'Tracks', 'key': 'tracks',
-    'get_function': mod_fetcher.fetch_tracks
+    'get_function': mod_fetcher.fetch_tracks,
   },
   {
     'title': 'PP Filters', 'key': 'ppfilters',
-    'get_function': mod_fetcher.fetch_ppfilters
+    'get_function': mod_fetcher.fetch_ppfilters,
   },
   {
     'title': 'Weather', 'key': 'weather',
-    'get_function': mod_fetcher.fetch_weather
+    'get_function': mod_fetcher.fetch_weather,
   },
   {
     'title': 'Apps', 'key': 'apps',
-    'get_function': mod_fetcher.fetch_apps
+    'get_function': mod_fetcher.fetch_apps,
   },
   # Installable-only categories
-  { 'title': 'Custom Shaders Patch', 'key': 'csp' },
-  { 'title': 'Python Apps', 'key': 'python-apps' },
-  { 'title': 'Lua Apps', 'key': 'lua-apps' },
-  { 'title': 'GUI Addons', 'key': 'gui-addons' },
+  { 'title': 'Custom Shaders Patch', 'key': 'csp'         },
+  { 'title': 'CSP Addons',           'key': 'csp-addons'  },
+  { 'title': 'Python Apps',          'key': 'python-apps' },
+  { 'title': 'Lua Apps',             'key': 'lua-apps'    },
+  { 'title': 'GUI Addons',           'key': 'gui-addons'  },
 ]
 
 include_info = ['size']

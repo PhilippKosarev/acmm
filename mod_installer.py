@@ -65,7 +65,13 @@ installable_mod_categories = [
     'install-dir': 'content/gui',
     'install-mode': 'clean',
   },
-  # (mod_finder.find_extensions, False),
+  {
+    'category-id': 'csp-addons',
+    'find-function': mod_finder.find_csp_addons,
+    'info-function': info_gatherer.get_generic_info,
+    'install-dir': 'extension',
+    'install-mode': 'overwrite',
+  },
   # (mod_finder.find_car_skins, False),
   # (mod_finder.find_track_addons, False),
 ]
@@ -90,6 +96,7 @@ class ModInstaller:
       install_mode = item.get('install-mode')
       # Finding mod paths
       found_paths = find_function(directory)
+      found_paths.sort()
       # Getting mod info
       found_mods = []
       for path in found_paths:
@@ -128,11 +135,13 @@ class ModInstaller:
       if progress_function is not None:
         progress_function(mod, iteration + 1, n_of_mods)
       # Installing
+      install_final_path = f"{install_dir}/{drawer.get_basename(mod_path)}"
       if install_mode == 'clean':
-        install_final_path = f"{install_dir}/{drawer.get_basename(mod_path)}"
         if drawer.exists(install_final_path):
           drawer.delete_path(install_final_path)
         drawer.copy(mod_path, install_final_path)
+      elif  install_mode == 'overwrite':
+        drawer.copy(mod_path, install_final_path, overwrite=True)
       elif  install_mode == 'csp':
         # Copying dwrite
         if drawer.exists(AC_DIR+'/dwrite.dll'):
