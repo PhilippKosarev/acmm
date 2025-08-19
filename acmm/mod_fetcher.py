@@ -6,6 +6,9 @@ from .data import data
 from .info_gatherer import InfoGatherer
 info_gatherer = InfoGatherer()
 
+# Shorthand vars
+asset_paths = data.get('asset-paths')
+
 # Helper functions
 def get_folders_sorted(path: str) -> list:
   folders = drawer.get_folders(path)
@@ -27,7 +30,7 @@ class ModFetcher:
   # Returns installed cars.
   def fetch_cars(self, AC_DIR: str, include: list = []) -> dict:
     cars = get_origins()
-    folders = get_folders_sorted(f"{AC_DIR}/{data.get('asset-paths').get('cars')}")
+    folders = get_folders_sorted(f"{AC_DIR}/{asset_paths.get('cars')}")
     for path in folders:
       mod, origin = info_gatherer.get_car_info(path, include)
       cars[origin].append(mod)
@@ -45,7 +48,7 @@ class ModFetcher:
   # Returns installed apps.
   def fetch_apps(self, AC_DIR: str, include: list = []) -> dict:
     apps = get_origins()
-    lang_folders = drawer.get_folders(f"{AC_DIR}/{data.get('asset-paths').get('apps')}")
+    lang_folders = drawer.get_folders(f"{AC_DIR}/{asset_paths.get('apps')}")
     folders = []
     for folder in lang_folders:
       folders += drawer.get_folders(folder)
@@ -58,7 +61,7 @@ class ModFetcher:
   # Returns installed PP filters.
   def fetch_ppfilters(self, AC_DIR: str, include: list = []) -> dict:
     ppfilters = get_origins()
-    files = get_files_sorted(f"{AC_DIR}/{data.get('asset-paths').get('ppfilters')}")
+    files = get_files_sorted(f"{AC_DIR}/{asset_paths.get('ppfilters')}")
     for path in files:
       mod, origin = info_gatherer.get_ppfilter_info(path, include)
       ppfilters[origin].append(mod)
@@ -67,7 +70,7 @@ class ModFetcher:
   # Returns installed weather.
   def fetch_weather(self, AC_DIR: str, include: list = []) -> dict:
     weather = get_origins()
-    folders = get_folders_sorted(f"{AC_DIR}/{data.get('asset-paths').get('weather')}")
+    folders = get_folders_sorted(f"{AC_DIR}/{asset_paths.get('weather')}")
     for path in folders:
       mod, origin = info_gatherer.get_weather_info(path, include)
       weather[origin].append(mod)

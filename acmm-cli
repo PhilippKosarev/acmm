@@ -74,11 +74,13 @@ mod_categories = [
 
 include_info = ['size']
 
-def get_category_mods(mod_category: str, category_info: dict, queue):
+def get_category_mods(
+  mod_category: str, category_info: dict, queue: SimpleQueue, options: dict
+) -> tuple:
   get_function = category_info.get('get_function')
   assets = get_function(AC_DIR, include_info)
-  opt_kunos = options.get('kunos').get('enabled')
-  opt_all = options.get('all').get('enabled')
+  opt_kunos = options.get('kunos')
+  opt_all = options.get('all')
   if opt_kunos is False and opt_all is False:
     mods = assets.get('mod')
   elif opt_kunos is True and opt_all is False:
@@ -91,7 +93,7 @@ def get_category_mods(mod_category: str, category_info: dict, queue):
   return_tuple = (mod_category, mods, size)
   queue.put(return_tuple)
 
-def get_mods() -> dict:
+def get_mods(options: dict) -> dict:
   start_time = time.time()
   typewriter.print_status('Fetching installed mods...')
   result_dict = {}
@@ -100,12 +102,14 @@ def get_mods() -> dict:
   for mod_category in mod_categories:
     key = mod_category.get('key')
     if key in options:
-      if not options.get(key).get('enabled'):
+      if not options.get(key):
         continue
     if 'get_function' not in mod_category:
       continue
     result_dict[key] = mod_category
-    process = Process(target=get_category_mods, args=(key, mod_category, queue))
+    process = Process(
+      target=get_category_mods, args=(key, mod_category, queue, options)
+    )
     process.start()
     processes.append(process)
   for process in processes:
@@ -152,28 +156,35 @@ def clean_temp_dir():
 class CLI:
 
   # List installed mods.
-  def list(self):
-    mod_categories = get_mods()
+  def list(self, args, options):
+    mod_categories = get_mods(options)
     print_mod_categories(mod_categories)
 
   # Interface to install mods.
-  def install(self, *args):
+  def install(self, args, options):
     clean_temp_dir()
     unpacked = []
     # Processing mod paths
     for path in args:
+      if not drawer.exists(path):
+        typewriter.print(f"File '{path}' not found.")
+        sys.exit(-1)
       # Unpacking
       if drawer.get_filetype(path) != 'folder':
         if not drawer.is_archive_supported(path):
-          return print('Unsupported filetype.')
+          return typewriter.print(f"Unsupported file '{path}'")
         basename = drawer.get_basename(path)
         def print_extract_progress(done: int, todo: int):
           typewriter.print_progress(f"Extracting '{basename}'", done, todo)
         typewriter.print_status(f"Extracting '{basename}'...")
         try:
-          unpacked.append(drawer.extract_archive(path, TEMP, progress_function=print_extract_progress))
+          unpacked.append(
+            drawer.extract_archive(
+              path, TEMP, progress_function=print_extract_progress
+            )
+          )
         except KeyboardInterrupt:
-          return typewriter.print('Archive extraction cancelled.')
+          return typewriter.print('Archive extraction aborted.')
       else:
         unpacked.append(path)
     unpacked = clipboard.deduplicate(unpacked)
@@ -181,7 +192,10 @@ class CLI:
     typewriter.print_status('Searching for mods...')
     installable_mods = {}
     for path in unpacked:
-      found_categories = mod_installer.find_installable_mods(path, include_info)
+      try:
+        found_categories = mod_installer.find_installable_mods(path, include_info)
+      except KeyboardInterrupt:
+        return typewriter.print('Mod search aborted.')
       for found_category in found_categories:
         found_mods = found_categories.get(found_category)
         if found_category in installable_mods:
@@ -221,9 +235,9 @@ class CLI:
     typewriter.print(f"Installed {len(installed_mods)} mods.")
 
   # Interface to remove mods.
-  def remove(self, *args):
+  def remove(self, args, options):
     # Fetching mods
-    mod_categories = get_mods()
+    mod_categories = get_mods(options)
     # Getting matching mods
     empty_categories = []
     for category in mod_categories:
@@ -232,7 +246,7 @@ class CLI:
       for mod in mods:
         mod_id = mod.get('mod_id')
         for search_term in args:
-          if search_term.lower() in mod_id:
+          if search_term.lower() in mod_id.lower():
             matching_mods.append(mod)
       if len(matching_mods) > 0:
         mod_categories[category]['mods'] = matching_mods
@@ -280,22 +294,25 @@ class CLI:
         return
     typewriter.print(f"Deleted {num_of_mods} mods.")
 
+cli = CLI()
+
 # Inputs/Commands/Options configuration
-app = 'acmm-cli'
 description = 'A command line mod manager for Assetto Corsa.'
 # help = "" # If you wish to set your own help page text
 commands = {
   'list': {
-    'function': CLI.list,
+    'function': cli.list,
     'description': 'Lists installed mods',
   },
   'install': {
-    'function': CLI.install,
+    'function': cli.install,
     'description': 'Installs the specified mod(s)',
+    'arguments': ['*paths'],
   },
   'remove': {
-    'function': CLI.remove,
+    'function': cli.remove,
     'description': 'Removes specified mod(s)',
+    'arguments': ['*mods'],
   },
 }
 options = {
@@ -328,22 +345,18 @@ options = {
     'description': 'Filter out non Kunos assets',
   },
 }
-help = captain.generate_help(app, description, commands, options)
-
 # Parsing user input
-interpretation = captain.interpret(app, help, commands, options)
-function = interpretation.get('function')
-options = interpretation.get('options')
+function, arguments, options = captain.sail(description, commands, options)
 
 # Enabling all filters if none are active
 filter_options = ['cars', 'tracks', 'ppfilters', 'weather', 'apps']
-disabled_filters = 0
+disabled_filters = []
 for filter_option in filter_options:
-  if options.get(filter_option).get('enabled') is False:
-    disabled_filters += 1
-if disabled_filters == len(filter_options):
+  if not options.get(filter_option):
+    disabled_filters.append(filter_option)
+if len(disabled_filters) == len(filter_options):
   for filter_option in filter_options:
-    options[filter_option]['enabled'] = True
+    options[filter_option] = True
 
-# Executing function
-exec(f"CLI().{function}")
+# Running
+function(arguments, options)
