@@ -31,6 +31,9 @@ dependencies = [
   "pycountry>=24.6.1",
 ]
 
+[project.scripts]
+acmm = "acmm.cli:main_cli"
+
 [project.urls]
 Homepage = "https://github.com/philippkosarev/acmm"
 Issues = "https://github.com/philippkosarev/acmm/issues"

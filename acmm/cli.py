@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#! /usr/bin/env python3
 
 # Imports
 from libjam import captain, drawer, typewriter, notebook, clipboard, flashcard
@@ -6,7 +6,7 @@ from multiprocessing import Process, SimpleQueue
 import sys, os, time
 
 # Internal imports
-from acmm import data, ModFetcher, ModInstaller
+from . import data, ModFetcher, ModInstaller
 mod_fetcher = ModFetcher()
 mod_installer = ModInstaller()
 
@@ -20,62 +20,46 @@ CONFIG_FILE = f"{CONFIG_DIR}/config.toml"
 notebook.check_config(CONFIG_TEMPLATE_FILE, CONFIG_FILE)
 config = notebook.read_toml(CONFIG_FILE)
 
-# Checking AC_DIR
-## Likely AC_DIR locations
-assettocorsa = data.get('ac_path_suffix')
-likely_ac_dirs = data.get('likely_ac_dirs')
-## Getting AC_DIR
-AC_DIR = config.get('paths').get("AC_DIR")
-if AC_DIR == None:
-  for directory in likely_ac_dirs:
-    if drawer.is_folder(directory):
-      AC_DIR = directory
-# Checking AC_DIR
-if AC_DIR == None:
-  print(f"""Assetto Corsa folder not found.
-If Assetto Corsa is not installed in the default location, you might need to specify the path to '{assettocorsa}' in '{CONFIG_FILE}'.""")
-  sys.exit(-1)
-elif not drawer.is_folder(AC_DIR):
-  print(f"""Path to Assetto Corsa's folder specified in '{CONFIG_FILE}' does not exist.""")
-  sys.exit(-1)
-elif not AC_DIR.endswith(assettocorsa):
-  print(f"""Path to Assetto Corsa in '{CONFIG_FILE}' is incorrect. It should end with '{assettocorsa}'.
-Currently specified AC directory:\n{AC_DIR}""")
-  sys.exit(-1)
-
-mod_categories = [
-  {
-    'title': 'Cars', 'key': 'cars',
-    'get_function': mod_fetcher.fetch_cars,
-  },
-  {
-    'title': 'Tracks', 'key': 'tracks',
-    'get_function': mod_fetcher.fetch_tracks,
-  },
-  {
-    'title': 'PP Filters', 'key': 'ppfilters',
-    'get_function': mod_fetcher.fetch_ppfilters,
-  },
-  {
-    'title': 'Weather', 'key': 'weather',
-    'get_function': mod_fetcher.fetch_weather,
-  },
-  {
-    'title': 'Apps', 'key': 'apps',
-    'get_function': mod_fetcher.fetch_apps,
-  },
-  # Installable-only categories
-  { 'title': 'Custom Shaders Patch', 'key': 'csp'         },
-  { 'title': 'CSP Addons',           'key': 'csp-addons'  },
-  { 'title': 'Python Apps',          'key': 'python-apps' },
-  { 'title': 'Lua Apps',             'key': 'lua-apps'    },
-  { 'title': 'GUI Addons',           'key': 'gui-addons'  },
-]
+def get_ac_dir():
+  # Checking AC_DIR
+  ## Likely AC_DIR locations
+  assettocorsa = data.get('ac_path_suffix')
+  likely_ac_dirs = data.get('likely_ac_dirs')
+  ## Getting AC_DIR
+  AC_DIR = config.get('paths').get("AC_DIR")
+  if AC_DIR == None:
+    for directory in likely_ac_dirs:
+      # print(directory)
+      if drawer.is_folder(directory):
+        AC_DIR = directory
+  # Checking AC_DIR
+  if AC_DIR == None:
+    print(
+      f"""Assetto Corsa folder not found.
+If Assetto Corsa is not installed in the default location, you might need to specify the path to '{assettocorsa}' in '{CONFIG_FILE}'."""
+    )
+    return
+  elif not drawer.is_folder(AC_DIR):
+    print(
+      f"""Path to Assetto Corsa's folder specified in '{CONFIG_FILE}' does not exist."""
+    )
+    return
+  elif not AC_DIR.endswith(assettocorsa):
+    print(
+      f"""Path to Assetto Corsa in '{CONFIG_FILE}' is incorrect. It should end with '{assettocorsa}'.
+Currently specified AC directory:\n{AC_DIR}"""
+    )
+    return
+  return AC_DIR
 
 include_info = ['size']
 
 def get_category_mods(
-  mod_category: str, category_info: dict, queue: SimpleQueue, options: dict
+  AC_DIR: str,
+  mod_category: str,
+  category_info: dict,
+  queue: SimpleQueue,
+  options: dict,
 ) -> tuple:
   get_function = category_info.get('get_function')
   assets = get_function(AC_DIR, include_info)
@@ -93,7 +77,7 @@ def get_category_mods(
   return_tuple = (mod_category, mods, size)
   queue.put(return_tuple)
 
-def get_mods(options: dict) -> dict:
+def get_mods(AC_DIR: str, options: dict) -> dict:
   start_time = time.time()
   typewriter.print_status('Fetching installed mods...')
   result_dict = {}
@@ -108,7 +92,9 @@ def get_mods(options: dict) -> dict:
       continue
     result_dict[key] = mod_category
     process = Process(
-      target=get_category_mods, args=(key, mod_category, queue, options)
+      target=get_category_mods, args=(
+        AC_DIR, key, mod_category, queue, options
+      )
     )
     process.start()
     processes.append(process)
@@ -152,13 +138,47 @@ def clean_temp_dir():
     drawer.delete_folder(TEMP)
   drawer.make_folder(TEMP)
 
+
+mod_categories = [
+  {
+    'title': 'Cars', 'key': 'cars',
+    'get_function': mod_fetcher.fetch_cars,
+  },
+  {
+    'title': 'Tracks', 'key': 'tracks',
+    'get_function': mod_fetcher.fetch_tracks,
+  },
+  {
+    'title': 'PP Filters', 'key': 'ppfilters',
+    'get_function': mod_fetcher.fetch_ppfilters,
+  },
+  {
+    'title': 'Weather', 'key': 'weather',
+    'get_function': mod_fetcher.fetch_weather,
+  },
+  {
+    'title': 'Apps', 'key': 'apps',
+    'get_function': mod_fetcher.fetch_apps,
+  },
+  # Installable-only categories
+  { 'title': 'Custom Shaders Patch', 'key': 'csp'         },
+  { 'title': 'CSP Addons',           'key': 'csp-addons'  },
+  { 'title': 'Python Apps',          'key': 'python-apps' },
+  { 'title': 'Lua Apps',             'key': 'lua-apps'    },
+  { 'title': 'GUI Addons',           'key': 'gui-addons'  },
+]
+
 # The command line interface for acmm.
 class CLI:
 
+  def __init__(self, AC_DIR: str):
+    self.AC_DIR = AC_DIR
+
   # List installed mods.
   def list(self, args, options):
-    mod_categories = get_mods(options)
+    mod_categories = get_mods(self.AC_DIR, options)
     print_mod_categories(mod_categories)
+    return 0
 
   # Interface to install mods.
   def install(self, args, options):
@@ -168,7 +188,7 @@ class CLI:
     for path in args:
       if not drawer.exists(path):
         typewriter.print(f"File '{path}' not found.")
-        sys.exit(-1)
+        return -1
       # Unpacking
       if drawer.get_filetype(path) != 'folder':
         if not drawer.is_archive_supported(path):
@@ -184,7 +204,8 @@ class CLI:
             )
           )
         except KeyboardInterrupt:
-          return typewriter.print('Archive extraction aborted.')
+          typewriter.print('Archive extraction aborted.')
+          return 130
       else:
         unpacked.append(path)
     unpacked = clipboard.deduplicate(unpacked)
@@ -195,7 +216,8 @@ class CLI:
       try:
         found_categories = mod_installer.find_installable_mods(path, include_info)
       except KeyboardInterrupt:
-        return typewriter.print('Mod search aborted.')
+        typewriter.print('Mod search aborted.')
+        return 130
       for found_category in found_categories:
         found_mods = found_categories.get(found_category)
         if found_category in installable_mods:
@@ -216,7 +238,8 @@ class CLI:
       if not flashcard.yn_prompt("Install listed mods?"):
         return typewriter.print("Installation cancelled.")
     except KeyboardInterrupt:
-      return typewriter.print("Installation cancelled.")
+      typewriter.print("Installation cancelled.")
+      return 130
     # Installing mods
     all_installable_mods = []
     for category in installable_mods:
@@ -226,18 +249,22 @@ class CLI:
       current_mod = current_mod.get('mod_id')
       typewriter.print_progress(f"Installing '{current_mod}'", done, todo)
     try:
-      installed_mods = mod_installer.install_mods(all_installable_mods, AC_DIR, print_install_progress)
+      installed_mods = mod_installer.install_mods(
+        all_installable_mods, self.AC_DIR, print_install_progress
+      )
     except KeyboardInterrupt:
-      return typewriter.print(
+      typewriter.print(
         'Installation aborted half-way through. Some mods may have been installed already.'
       )
+      return 130
     clean_temp_dir()
     typewriter.print(f"Installed {len(installed_mods)} mods.")
+    return 0
 
   # Interface to remove mods.
   def remove(self, args, options):
     # Fetching mods
-    mod_categories = get_mods(options)
+    mod_categories = get_mods(self.AC_DIR, options)
     # Getting matching mods
     empty_categories = []
     for category in mod_categories:
@@ -257,13 +284,15 @@ class CLI:
       mod_categories.pop(category)
     # Checking if any match
     if len(mod_categories) == 0:
-      return print(f"No mods found matching '{search_term}'.")
+      print(f"No mods found matching '{search_term}'.")
+      return 0
     print_mod_categories(mod_categories)
     try:
       if not flashcard.yn_prompt('Remove the listed mods?'):
-        return typewriter.print('Deletion aborted.')
+        return 0
     except KeyboardInterrupt:
-      return typewriter.print('Deletion aborted.')
+      print()
+      return 130
     # Getting all mods into a list
     all_mods = []
     for category in mod_categories:
@@ -290,73 +319,85 @@ class CLI:
           last_deleted = deleted_mods[-1].get('mod_id')
           typewriter.print(f"Deleted {len(deleted_mods)} mods. Last deleted: '{last_deleted}'.")
         else:
-          typewriter.print('No mod was deleted.')
-        return
+          typewriter.print('No mods were deleted.')
+        return 130
     typewriter.print(f"Deleted {num_of_mods} mods.")
+    return 0
 
-cli = CLI()
 
-# Inputs/Commands/Options configuration
-description = 'A command line mod manager for Assetto Corsa.'
-# help = "" # If you wish to set your own help page text
-commands = {
-  'list': {
-    'function': cli.list,
-    'description': 'Lists installed mods',
-  },
-  'install': {
-    'function': cli.install,
-    'description': 'Installs the specified mod(s)',
-    'arguments': ['*paths'],
-  },
-  'remove': {
-    'function': cli.remove,
-    'description': 'Removes specified mod(s)',
-    'arguments': ['*mods'],
-  },
-}
-options = {
-  'cars': {
-    'long': ['car', 'cars'], 'short': ['c'],
-    'description': 'Only list/remove cars',
-  },
-  'tracks': {
-    'long': ['track', 'tracks'], 'short': ['t'],
-    'description': 'Only list/remove tracks',
-  },
-  'ppfilters': {
-    'long': ['ppfilter', 'ppfilters'], 'short': ['f'],
-    'description': 'Only list/remove PP filters',
-  },
-  'weather': {
-    'long': ['weather'], 'short': ['w'],
-    'description': 'Only list/remove weather',
-  },
-  'apps': {
-    'long': ['app', 'apps'], 'short': ['a'],
-    'description': 'Only list/remove apps',
-  },
-  'all': {
-    'long': ['all'], 'short': ['A'],
-    'description': 'Do not filter out Kunos assets',
-  },
-  'kunos': {
-    'long': ['kunos'], 'short': ['k'],
-    'description': 'Filter out non Kunos assets',
-  },
-}
-# Parsing user input
-function, arguments, options = captain.sail(description, commands, options)
+def main():
+  AC_DIR = get_ac_dir()
+  if AC_DIR is None:
+    return 1
+  cli = CLI(AC_DIR)
 
-# Enabling all filters if none are active
-filter_options = ['cars', 'tracks', 'ppfilters', 'weather', 'apps']
-disabled_filters = []
-for filter_option in filter_options:
-  if not options.get(filter_option):
-    disabled_filters.append(filter_option)
-if len(disabled_filters) == len(filter_options):
+  # Commands and options
+  description = 'A CLI mod manager for Assetto Corsa'
+  commands = {
+    'list': {
+      'function': cli.list,
+      'description': 'Lists installed mods',
+    },
+    'install': {
+      'function': cli.install,
+      'description': 'Installs the specified mod(s)',
+      'arguments': ['*paths'],
+    },
+    'remove': {
+      'function': cli.remove,
+      'description': 'Removes specified mod(s)',
+      'arguments': ['*mods'],
+    },
+  }
+  options = {
+    'cars': {
+      'long': ['car', 'cars'], 'short': ['c'],
+      'description': 'Only list/remove cars',
+    },
+    'tracks': {
+      'long': ['track', 'tracks'], 'short': ['t'],
+      'description': 'Only list/remove tracks',
+    },
+    'ppfilters': {
+      'long': ['ppfilter', 'ppfilters'], 'short': ['f'],
+      'description': 'Only list/remove PP filters',
+    },
+    'weather': {
+      'long': ['weather'], 'short': ['w'],
+      'description': 'Only list/remove weather',
+    },
+    'apps': {
+      'long': ['app', 'apps'], 'short': ['a'],
+      'description': 'Only list/remove apps',
+    },
+    'all': {
+      'long': ['all'], 'short': ['A'],
+      'description': 'Do not filter out Kunos assets',
+    },
+    'kunos': {
+      'long': ['kunos'], 'short': ['k'],
+      'description': 'Filter out non Kunos assets',
+    },
+  }
+
+  # Parsing user input
+  function, arguments, options = captain.sail(description, commands, options)
+
+  # Enabling all filters if none are active
+  filter_options = ['cars', 'tracks', 'ppfilters', 'weather', 'apps']
+  disabled_filters = []
   for filter_option in filter_options:
-    options[filter_option] = True
+    if not options.get(filter_option):
+      disabled_filters.append(filter_option)
+  if len(disabled_filters) == len(filter_options):
+    for filter_option in filter_options:
+      options[filter_option] = True
 
-# Running
-function(arguments, options)
+  # Running
+  return function(arguments, options)
+
+def main_cli():
+  return main()
+
+if __name__ == '__main__':
+  sys.exit(main())

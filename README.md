@@ -18,7 +18,12 @@ A few of the mods/mod types that acmm can install:
 - 💡 Custom Shaders Patch
 - 🕶️ SOL
 
-## Installation
+## How-to
+Installing:
 ```
 pip install git+https://github.com/PhilippKosarev/acmm.git
+```
+Running:
+```
+acmm --help
 ```
