@@ -100,8 +100,11 @@ def get_mods(AC_DIR: str, options: dict) -> dict:
     processes.append(process)
   for process in processes:
     key, mods, size = queue.get()
-    result_dict[key]['mods'] = mods
-    result_dict[key]['size'] = size
+    if len(mods) > 0:
+      result_dict[key]['mods'] = mods
+      result_dict[key]['size'] = size
+    else:
+      result_dict.pop(key)
   for process in processes:
     process.join()
   queue.close()
