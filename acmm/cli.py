@@ -6,9 +6,9 @@ from multiprocessing import Process, SimpleQueue
 import sys, os, time
 
 # Internal imports
-from . import data, ModFetcher, ModInstaller
-mod_fetcher = ModFetcher()
-mod_installer = ModInstaller()
+import acmm
+mod_fetcher = acmm.ModFetcher()
+mod_installer = acmm.ModInstaller()
 
 # Handling config
 HOME = drawer.get_home()
@@ -23,8 +23,8 @@ config = notebook.read_toml(CONFIG_FILE)
 def get_ac_dir():
   # Checking AC_DIR
   ## Likely AC_DIR locations
-  assettocorsa = data.get('ac_path_suffix')
-  likely_ac_dirs = data.get('likely_ac_dirs')
+  assettocorsa = acmm.data.get('ac_path_suffix')
+  likely_ac_dirs = acmm.data.get('likely_ac_dirs')
   ## Getting AC_DIR
   AC_DIR = config.get('paths').get("AC_DIR")
   if AC_DIR == None:
