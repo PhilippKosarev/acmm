@@ -6,7 +6,7 @@ from multiprocessing import Process, SimpleQueue
 import sys, os, time
 
 # Internal imports
-import acmm
+import acmm.legacy as acmm
 mod_fetcher = acmm.ModFetcher()
 mod_installer = acmm.ModInstaller()
 
