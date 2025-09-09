@@ -1,7 +1,5 @@
 # acmm
-A mod manager for Assetto Corsa. Written in Python, utilises [libjam](https://github.com/PhilippKosarev/libjam).
-
-Features a separated back-end and front-end, with a CLI included in the box!
+A mod manager for Assetto Corsa. Written in Python. Features a separated back-end and front-end, with a CLI included in the box!
 
 ## CLI Features
 - ⚡ Responsive and easy to use
@@ -18,12 +16,8 @@ A few of the mods/mod types that acmm can install:
 - 💡 Custom Shaders Patch
 - 🕶️ SOL
 
-## How-to
-Installing:
+## Install
 ```
 pip install git+https://github.com/PhilippKosarev/acmm.git
-```
-Running:
-```
 acmm --help
 ```
