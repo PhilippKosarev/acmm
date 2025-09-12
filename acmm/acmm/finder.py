@@ -27,18 +27,13 @@ def search_for_files(path: str, filename: str) -> list:
 # Find functions
 def find_csp(path: str) -> list:
   folders = drawer.get_folders_recursive(path)
-  extension_folder = None
+  if drawer.is_folder(path):
+    folders.insert(0, path)
   for folder in folders:
-    if drawer.get_basename(folder) == 'extension':
-      extension_folder = folder
-  if extension_folder is None:
-    return []
-  parent_folder = drawer.get_parent(extension_folder)
-  parent_folder_files = drawer.get_files(parent_folder)
-  for file in parent_folder_files:
-    basename = drawer.get_basename(file)
-    if basename == 'dwrite.dll':
-      return [parent_folder]
+    files = [drawer.get_basename(file) for file in drawer.get_files(folder)]
+    subfolders = [drawer.get_basename(subfolder) for subfolder in drawer.get_folders(folder)]
+    if 'dwrite.dll' in files and 'extension' in subfolders:
+      return [folder]
   return []
 
 def find_cars(path: str) -> list:
@@ -182,6 +177,13 @@ def find_weather(path: str) -> list:
 #   parents = clipboard.deduplicate(parents)
 #   return parents
 
+# Helper functions
+def is_subpath_of(item: str, all_paths: list):
+  for path in all_paths:
+    if item.startswith(path):
+      return True
+  return False
+
 # Order is important here
 findables = [
   (find_csp, Asset.CSP),
@@ -196,22 +198,13 @@ findables = [
 class Finder:
 
   def find(self, directory: str) -> list:
-    assets_categories = []
+    found_paths = []
+    found_assets = []
     for item in findables:
       find_function, asset_class = item
-      paths = find_function(directory)
-      if len(paths) == 0:
-        continue
-      assets = []
-      for path in paths:
-        try:
-          previously_found_paths = [asset.get_path() for asset in assets]
-          for previously_found_path in previously_found_paths:
-            if path.startswith(previously_found_path):
-              raise Found()
-          assets.append(asset_class(path))
-        except Found:
+      for path in find_function(directory):
+        if is_subpath_of(path, found_paths):
           continue
-      if len(assets) > 0:
-        assets_categories.append(assets)
-    return assets_categories
+        found_paths.append(path)
+        found_assets.append(asset_class(path))
+    return found_assets

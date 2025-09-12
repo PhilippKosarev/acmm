@@ -23,6 +23,3 @@ def check_ac_dir(ac_dir: str):
       raise InvalidACDir(
         f"Missing required path '{path}' in AC directory '{ac_dir}'."
       )
-
-def check_csp_dir(csp_dir: str):
-  pass

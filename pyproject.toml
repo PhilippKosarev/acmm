@@ -27,7 +27,7 @@ classifiers = [
 ]
 
 dependencies = [
-  "libjam == 0.1.5",
+  "libjam == 0.1.7",
   "pycountry >= 24.6.1",
   "bs4 >= 0.0.2",
 ]

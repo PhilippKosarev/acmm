@@ -53,6 +53,16 @@ If Assetto Corsa is not installed in the default location, you might need to spe
     return None
   return AC_DIR
 
+def categorise_assets(assets: list) -> list:
+  categories = {}
+  for asset in assets:
+    asset_type = type(asset)
+    if asset_type not in categories:
+      categories[asset_type] = [asset]
+    else:
+      categories[asset_type].append(asset)
+  return list(categories.values())
+
 asset_info = {
   acmm.Asset.Car: {
     'title': 'Cars',
@@ -241,36 +251,38 @@ class CLI:
   def install(self, args, options):
     clean_temp_dir()
     unpacked = []
-    # Processing mod paths
-    for path in args:
-      if not drawer.exists(path):
-        typewriter.print(f"File '{path}' not found.")
-        return -1
-      # Unpacking
-      if drawer.get_filetype(path) != 'folder':
-        if not drawer.is_archive_supported(path):
-          return typewriter.print(f"Unsupported file '{path}'")
-        basename = drawer.get_basename(path)
-        def print_extract_progress(done: int, todo: int):
-          typewriter.print_progress(f"Extracting '{basename}'", done, todo)
-        typewriter.print_status(f"Extracting '{basename}'...")
-        try:
-          drawer.extract_archive(
-            path, TEMP, progress_function=print_extract_progress,
-          )
-        except KeyboardInterrupt:
-          typewriter.print('Archive extraction aborted.')
-          return 130
-      else:
+    # Unpacking
+    try:
+      for path in args:
+        if drawer.is_file(path):
+          if not drawer.is_archive_supported(path):
+            typewriter.print(f"Unsupported file '{path}'.")
+            return 1
+          basename = drawer.get_basename(path)
+          def print_extract_progress(done: int, todo: int):
+            typewriter.print_progress(f"Extracting '{basename}'", done, todo)
+          typewriter.print_status(f"Extracting '{basename}'...")
+          path = drawer.extract_archive(path, TEMP, print_extract_progress)
+        elif not drawer.is_folder(path):
+          typewriter.print(f"File '{path}' not found.")
+          return -1
         unpacked.append(path)
+    except KeyboardInterrupt:
+      typewriter.print('Archive extraction aborted.')
+      return 130
     # Searching for mods
     typewriter.print_status('Searching for mods...')
     try:
-      categories = [AssetCategory(i) for i in self.finder.find(TEMP)]
+      assets = []
+      for path in unpacked:
+        assets += self.finder.find(path)
+      categories = []
+      for item in categorise_assets(assets):
+        categories.append(AssetCategory(item))
+      collection = CategoryCollection(categories)
     except KeyboardInterrupt:
       typewriter.print('Mod search aborted.')
       return 130
-    collection = CategoryCollection(categories)
     # Checking found mods
     if len(collection) == 0:
       typewriter.print('No mods found.')

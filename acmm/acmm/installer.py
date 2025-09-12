@@ -69,12 +69,12 @@ def install_csp(
 
 # Mapping install functions
 assset_install_functions = {
-  Asset.Car:      (install_generic, asset_paths.get('cars')      ),
-  Asset.Track:    (install_generic, asset_paths.get('tracks')    ),
-  Asset.PPFilter: (install_generic, asset_paths.get('ppfilters') ),
-  Asset.Weather:  (install_generic, asset_paths.get('weather')   ),
-  Asset.App:      (install_app,     asset_paths.get('apps')      ),
-  Asset.CSP:      (install_csp,     ''                           ),
+  Asset.Car:      ( install_generic, asset_paths.get('cars')      ),
+  Asset.Track:    ( install_generic, asset_paths.get('tracks')    ),
+  Asset.PPFilter: ( install_generic, asset_paths.get('ppfilters') ),
+  Asset.Weather:  ( install_generic, asset_paths.get('weather')   ),
+  Asset.App:      ( install_app,     asset_paths.get('apps')      ),
+  Asset.CSP:      ( install_csp,     ''                           ),
 }
 
 
