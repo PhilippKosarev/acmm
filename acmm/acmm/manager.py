@@ -19,27 +19,30 @@ class InvalidACDir(Exception):
   pass
 
 # Helper functions
-def check_ac_dir(ac_dir: str):
-  if not drawer.is_folder(ac_dir):
-    raise FileNotFoundError(
-      f"Specified AC directory at '{ac_dir}' does not exist."
-    )
-  for path in asset_paths.values():
-    if not drawer.is_folder(f'{ac_dir}/{path}'):
-      raise InvalidACDir(
-        f"Missing required path '{path}' in AC directory '{ac_dir}'."
-      )
-
 def is_subpath_of(item: str, all_paths: list):
   for path in all_paths:
     if item.startswith(path):
       return True
   return False
 
+
 # Manages assets for Assetto Corsa.
 class Manager:
+
+  @staticmethod
+  def check_ac_dir(ac_dir: str):
+    if not drawer.is_folder(ac_dir):
+      raise FileNotFoundError(
+        f"Specified AC directory at '{ac_dir}' does not exist."
+      )
+    for path in asset_paths.values():
+      if not drawer.is_folder(f'{ac_dir}/{path}'):
+        raise InvalidACDir(
+          f"Missing required path '{path}' in AC directory '{ac_dir}'."
+        )
+
   def __init__(self, ac_dir: str):
-    check_ac_dir(ac_dir)
+    self.check_ac_dir(ac_dir)
     self.ac_dir = ac_dir
 
   def fetch_assets(self, asset_class: Asset):
