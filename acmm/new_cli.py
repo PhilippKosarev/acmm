@@ -17,6 +17,28 @@ CONFIG_FILE = f"{CONFIG_DIR}/config.toml"
 notebook.check_config(CONFIG_TEMPLATE_FILE, CONFIG_FILE)
 config = notebook.read_toml(CONFIG_FILE)
 
+# Helper vars
+asset_info = {
+  acmm.Asset.Car: {
+    'title': 'Cars',
+  },
+  acmm.Asset.Track: {
+    'title': 'Tracks',
+  },
+  acmm.Asset.PPFilter: {
+    'title': 'PP Filters',
+  },
+  acmm.Asset.Weather: {
+    'title': 'Weather',
+  },
+  acmm.Asset.App: {
+    'title': 'Apps',
+  },
+  # acmm.Asset.CSP: {
+  #   'title': 'Extensions',
+  # },
+}
+
 # Helper functions
 def clean_temp_dir():
   if drawer.exists(TEMP):
@@ -53,136 +75,86 @@ If Assetto Corsa is not installed in the default location, you might need to spe
     return None
   return AC_DIR
 
+def asset_class_to_key(asset_class: acmm.Asset) -> str:
+  return asset_class.__name__.lower()
+
 def categorise_assets(assets: list) -> list:
   categories = {}
   for asset in assets:
-    asset_type = type(asset)
-    if asset_type not in categories:
-      categories[asset_type] = [asset]
+    key = asset_class_to_key(type(asset))
+    if key not in categories:
+      categories[key] = [asset]
     else:
-      categories[asset_type].append(asset)
+      categories[key].append(asset)
   return list(categories.values())
 
-asset_info = {
-  acmm.Asset.Car: {
-    'title': 'Cars',
-  },
-  acmm.Asset.Track: {
-    'title': 'Tracks',
-  },
-  acmm.Asset.PPFilter: {
-    'title': 'PP Filters',
-  },
-  acmm.Asset.Weather: {
-    'title': 'Weather',
-  },
-  acmm.Asset.App: {
-    'title': 'Apps',
-  },
-  acmm.Asset.CSP: {
-    'title': 'CSP',
-  },
-}
-
-class AssetCategory:
-  def __init__(self, assets: list):
-    assets.sort(key=lambda asset: asset.get_id())
-    self.size = sum([asset.get_size() for asset in assets])
-    self.assets = tuple(assets)
-
-  def __len__(self):
-    return len(self.assets)
-
-  def get_assets(self):
-    return list(self.assets)
-
-  def get_title(self):
-    return asset_info.get(type(self.assets[0])).get('title')
-
-  def get_print_string(self):
-    asset_ids = [asset.get_id() for asset in self.assets]
-    asset_ids = typewriter.list_to_columns(asset_ids)
-    title = typewriter.bolden(self.get_title() + ':')
-    size, units, _ = drawer.get_readable_filesize(self.size)
-    size = f'{round(size, 1)} {units.upper()}'
-    return f'{title} ( {len(self.assets)} | {size} )\n{asset_ids}\n'
-
-  def print(self):
-    typewriter.print(self.get_print_string())
-
-class CategoryCollection:
-  def __init__(self, categories: list):
-    self.categories = tuple(categories)
-
-  def __len__(self):
-    return len(self.categories)
-
-  def get_collections(self):
-    return list(self.collections)
-
-  def get_assets(self):
-    assets = []
-    for collection in self.categories:
-      assets += collection.get_assets()
-    return assets
-
-  def print(self):
-    strings = [category.get_print_string() for category in self.categories]
-    typewriter.print('\n'.join(strings))
-
-def filter_assets_by_origin(assets: list, options: dict):
+def filter_assets_by_origin(assets: list, options: dict) -> list:
   filtered_assets = []
   for asset in assets:
     if options.get('all'):
       filtered_assets.append(asset)
-      continue
     elif options.get('kunos'):
       if asset.get_origin() is acmm.AssetOrigin.KUNOS:
         filtered_assets.append(asset)
-        continue
     else:
       if asset.get_origin() is acmm.AssetOrigin.MOD:
         filtered_assets.append(asset)
-        continue
   return filtered_assets
 
-def get_installed_collection(fetcher: acmm.Fetcher, options: dict) -> CategoryCollection:
-  asset_categories = []
-  for category in acmm.FetchableAssetCategory:
+def get_installed_assets(manager: acmm.Manager, options: dict) -> list:
+  asset_classes = acmm.Asset.get_asset_classes()
+  assets = []
+  for asset_class in asset_classes:
     # Checking if category is enabled
-    key = category.name.lower()
+    key = asset_class_to_key(asset_class)
     enabled = options.get(key)
     if enabled is not None:
       if not enabled:
         continue
     # Fetching
-    assets = fetcher.fetch(category)
-    assets = filter_assets_by_origin(assets, options)
-    if len(assets) > 0:
-      asset_categories.append(AssetCategory(assets))
-  return CategoryCollection(asset_categories)
+    assets += (
+      filter_assets_by_origin(manager.fetch_assets(asset_class), options)
+    )
+  return assets
 
-def search_by_ids(
-  search_terms: list, fetcher: acmm.Fetcher, options: dict,
-) -> CategoryCollection:
-  asset_categories = []
-  for category in acmm.FetchableAssetCategory:
-    # Checking if category is enabled
-    key = category.name.lower()
-    enabled = options.get(key)
-    if enabled is not None:
-      if not enabled:
-        continue
-    # Fetching
-    assets = []
-    for term in search_terms:
-      assets += fetcher.search_by_id(category, term)
-    assets = filter_assets_by_origin(assets, options)
-    if len(assets) > 0:
-      asset_categories.append(AssetCategory(assets))
-  return CategoryCollection(asset_categories)
+def filter_by_id(
+  assets: list, search_terms: list,
+) -> list:
+  matching = []
+  search_terms = [search_term.lower() for search_term in search_terms]
+  for asset in assets:
+    asset_id = asset.get_id()
+    for search_term in search_terms:
+      if search_term in asset_id.lower():
+        matching.append(asset)
+  return matching
 
-def get_delay(num: int, delay_min: float, delay_max: float):
+def print_assets(assets: list, include_size: bool):
+  categories = categorise_assets(assets)
+  sections = []
+  for assets in categories:
+    heading = [
+      typewriter.bolden(asset_info.get(type(assets[0])).get('title') + ':'),
+      '(',
+      str(len(assets)),
+    ]
+    if include_size:
+      size = sum([asset.get_size() for asset in assets])
+      size = drawer.get_readable_filesize(size)
+      heading += [
+        '|',
+        str(round(size[0], 1)),
+        size[1].upper(),
+      ]
+    heading += [')']
+    asset_ids = [asset.get_id() for asset in assets]
+    asset_ids.sort()
+    sections.append(
+      ' '.join(heading) + '\n' + typewriter.list_to_columns(asset_ids) + '\n'
+    )
+  typewriter.print('\n'.join(sections))
+
+def get_delay(num: int, delay_min: float, delay_max: float) -> float:
   # Getting normalised inverse log
   try:
     delay = 1 / (math.log2(1 + num) * 0.5) * 0.5
@@ -196,36 +168,35 @@ def get_delay(num: int, delay_min: float, delay_max: float):
 class CLI:
 
   def __init__(self, AC_DIR: str):
-    self.fetcher = acmm.Fetcher(AC_DIR)
-    self.finder = acmm.Finder()
-    self.installer = acmm.Installer(AC_DIR)
+    self.manager = acmm.Manager(AC_DIR)
 
   # Lists installed mods.
   def list(self, args, options):
-    collection = get_installed_collection(self.fetcher, options)
-    if len(collection) == 0:
+    assets = get_installed_assets(self.manager, options)
+    if len(assets) == 0:
       typewriter.print('No mods found.')
     else:
-      collection.print()
+      print_assets(assets, options.get('size'))
     return 0
 
   # Deletes request mods.
   def remove(self, args, options):
     # Fetching and filtering mods
-    collection = search_by_ids(args, self.fetcher, options)
-    if len(collection) == 0:
-      typewriter.print('No mods found.')
+    assets = get_installed_assets(self.manager, options)
+    assets = filter_by_id(assets, args)
+    n_assets = len(assets)
+    if len(assets) == 0:
+      typewriter.print('No mods found matching any of the terms.')
       return 0
-    collection.print()
-    assets = collection.get_assets()
+    print_assets(assets, options.get('size'))
     try:
-      if not flashcard.yn_prompt(f'Remove the listed {len(assets)} mods?'):
+      if not flashcard.yn_prompt(f'Remove the listed {n_assets} mods?'):
         return 0
     except KeyboardInterrupt:
       print()
       return 130
     # Deleting
-    delay = get_delay(num=len(assets), delay_min=0, delay_max=0.2)
+    delay = get_delay(num=n_assets, delay_min=0, delay_max=0.2)
     deleted = []
     for asset in assets:
       asset_id = asset.get_id()
@@ -235,7 +206,7 @@ class CLI:
         time.sleep(delay)
         drawer.trash_path(asset_path)
       except KeyboardInterrupt:
-        typewriter.print(f'Deletion aborted.')
+        typewriter.print('Deletion aborted.')
         if len(deleted) == 0:
           typewriter.print('No mods were deleted.')
         else:
@@ -275,20 +246,16 @@ class CLI:
     try:
       assets = []
       for path in unpacked:
-        assets += self.finder.find(path)
-      categories = []
-      for item in categorise_assets(assets):
-        categories.append(AssetCategory(item))
-      collection = CategoryCollection(categories)
+        assets += self.manager.find(path)
     except KeyboardInterrupt:
       typewriter.print('Mod search aborted.')
       return 130
     # Checking found mods
-    if len(collection) == 0:
+    if len(assets) == 0:
       typewriter.print('No mods found.')
       return 0
     # Getting user confirmation
-    collection.print()
+    print_assets(assets, True)
     try:
       if not flashcard.yn_prompt("Install listed mods?"):
         typewriter.print("Installation cancelled.")
@@ -296,14 +263,14 @@ class CLI:
     except KeyboardInterrupt:
       print()
       return 130
-    # Installing mods
-    assets = collection.get_assets()
+    # Installing
     installed = []
+    to_install = len(assets)
     for asset in assets:
       asset_id = asset.get_id()
       try:
-        typewriter.print_progress(f"Installing '{asset_id}'", len(installed), len(assets))
-        asset = self.installer.install(asset, acmm.InstallMethod.UPDATE)
+        typewriter.print_progress(f"Installing '{asset_id}'", len(installed), to_install)
+        asset = self.manager.install(asset, acmm.InstallMethod.UPDATE)
         installed.append(asset)
       except KeyboardInterrupt:
         typewriter.print('Installation aborted.')
@@ -360,8 +327,8 @@ def main():
     },
   }
   fetchable_categories = [
-    category.name.lower()
-    for category in acmm.FetchableAssetCategory
+    asset_class_to_key(asset_class)
+    for asset_class in acmm.Asset.get_asset_classes()
   ]
   options = {}
   for category in fetchable_categories:
@@ -377,6 +344,10 @@ def main():
     'kunos': {
       'long': ['kunos'], 'short': ['k'],
       'description': 'Filter out non Kunos assets',
+    },
+    'size': {
+      'long': ['size'], 'short': ['s'],
+      'description': 'Show category size',
     },
   })
 

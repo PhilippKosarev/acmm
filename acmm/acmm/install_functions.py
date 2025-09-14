@@ -5,7 +5,6 @@ from enum import Enum
 # Internal imports
 from .assets import AppLang, Asset
 from .data import data
-from .shared import *
 
 # Shorthand vars
 asset_paths = data.get('asset-paths')
@@ -56,39 +55,24 @@ def install_app(
   asset.path = final_location
   return asset
 
-def install_csp(
-  asset: Asset.CSP, install_dir: str, install_method: InstallMethod,
-) -> Asset.CSP:
-  asset_path = asset.get_path()
-  dwrite_file = asset_path + '/dwrite.dll'
-  base_install(dwrite_file, install_dir, install_method)
-  extension_dir = asset_path + '/extension'
-  base_install(extension_dir, install_dir, install_method)
-  asset.path = install_dir
-  return asset
+# def install_csp(
+#   asset: Asset.CSP, install_dir: str, install_method: InstallMethod,
+# ) -> Asset.CSP:
+#   asset_path = asset.get_path()
+#   dwrite_file = asset_path + '/dwrite.dll'
+#   base_install(dwrite_file, install_dir, install_method)
+#   extension_dir = asset_path + '/extension'
+#   base_install(extension_dir, install_dir, install_method)
+#   asset.path = install_dir
+#   return asset
 
 # Mapping install functions
-assset_install_functions = {
+install_functions = {
   Asset.Car:      ( install_generic, asset_paths.get('cars')      ),
   Asset.Track:    ( install_generic, asset_paths.get('tracks')    ),
   Asset.PPFilter: ( install_generic, asset_paths.get('ppfilters') ),
   Asset.Weather:  ( install_generic, asset_paths.get('weather')   ),
   Asset.App:      ( install_app,     asset_paths.get('apps')      ),
-  Asset.CSP:      ( install_csp,     ''                           ),
+  # Asset.CSP:      ( install_csp,     ''                           ),
 }
 
-
-# Fetches installed mods.
-class Installer:
-
-  def __init__(self, ac_dir: str):
-    check_ac_dir(ac_dir)
-    self.ac_dir = ac_dir
-
-  def install(self, asset: Asset, install_method: InstallMethod) -> Asset:
-    install_function, install_dir = assset_install_functions.get(type(asset))
-    if install_function is None:
-      raise NotImplementedError()
-    return install_function(
-      asset, f'{self.ac_dir}/{install_dir}', install_method,
-    )

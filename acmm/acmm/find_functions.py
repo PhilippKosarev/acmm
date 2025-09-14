@@ -2,9 +2,9 @@
 from libjam import drawer, clipboard
 
 # Internal imports
-from .assets import Asset
 from .data import data
-from .shared import *
+from .assets import Asset
+from .extensions import Extension
 
 # Shorthand vars
 asset_paths = data.get('asset-paths')
@@ -177,34 +177,11 @@ def find_weather(path: str) -> list:
 #   parents = clipboard.deduplicate(parents)
 #   return parents
 
-# Helper functions
-def is_subpath_of(item: str, all_paths: list):
-  for path in all_paths:
-    if item.startswith(path):
-      return True
-  return False
-
 # Order is important here
-findables = [
-  (find_csp, Asset.CSP),
-  (find_cars, Asset.Car),
-  (find_tracks, Asset.Track),
-  (find_ppfilters, Asset.PPFilter),
-  (find_weather, Asset.Weather),
-  (find_apps, Asset.App),
-]
-
-# Finds mods.
-class Finder:
-
-  def find(self, directory: str) -> list:
-    found_paths = []
-    found_assets = []
-    for item in findables:
-      find_function, asset_class = item
-      for path in find_function(directory):
-        if is_subpath_of(path, found_paths):
-          continue
-        found_paths.append(path)
-        found_assets.append(asset_class(path))
-    return found_assets
+find_functions = {
+  Asset.Car: find_cars,
+  Asset.Track: find_tracks,
+  Asset.PPFilter: find_ppfilters,
+  Asset.Weather: find_weather,
+  Asset.App: find_apps,
+}
