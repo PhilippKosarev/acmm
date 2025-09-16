@@ -76,8 +76,9 @@ class GenericAsset(BaseAsset):
         preview = self.data.get('preview-file')
     else:
       preview = self.data.get('preview-file')
-    if drawer.is_file(preview):
-      return preview
+    if preview is not None:
+      if drawer.is_file(preview):
+        return preview
 
   def get_ui_file(self) -> str:
     if self.get_origin() == AssetOrigin.DLC:
