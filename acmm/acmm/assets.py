@@ -85,15 +85,15 @@ class GenericAsset(BaseAsset):
       ui_file = self.data.get('dlc-ui-file')
     else:
       ui_file = self.data.get('ui-file')
-    if drawer.is_file(ui_file):
-      return ui_file
+    if ui_file is not None:
+      if drawer.is_file(ui_file):
+        return ui_file
 
   def get_ui_info(self) -> dict:
     ui_file = self.get_ui_file()
-    if ui_file is None:
-      return None
-    data = notebook.read_json(ui_file)
-    return clean_ui_dict(data)
+    if ui_file is not None:
+      data = notebook.read_json(ui_file)
+      return clean_ui_dict(data)
 
   def trash(self):
     path = self.get_path()
