@@ -16,6 +16,12 @@ kunos_assets = data.get('kunos-assets')
 asset_paths = data.get('asset-paths')
 
 # Helper functions
+def get_existing_file(path_prefix: str, path: str):
+  if path is not None:
+    file = path_prefix + '/' + path
+    if drawer.is_file(file):
+      return file
+
 def clean_ui_dict(data: dict) -> dict:
   for key in data:
     value = data.get(key)
@@ -70,24 +76,23 @@ class GenericAsset(BaseAsset):
     return AssetOrigin.MOD
 
   def get_preview(self):
+    preview = None
     if self.get_origin() is AssetOrigin.DLC:
-      preview = self.data.get('dlc-preview-file')
-      if not drawer.is_file(preview):
-        preview = self.data.get('preview-file')
-    else:
-      preview = self.data.get('preview-file')
+      preview = get_existing_file(self.get_path(), self.data.get('dlc-preview-file'))
+    if preview is None:
+      preview = get_existing_file(self.get_path(), self.data.get('preview-file'))
     if preview is not None:
-      if drawer.is_file(preview):
-        return preview
+      return preview
 
   def get_ui_file(self) -> str:
+    ui_file = None
     if self.get_origin() == AssetOrigin.DLC:
-      ui_file = self.data.get('dlc-ui-file')
-    else:
-      ui_file = self.data.get('ui-file')
+      ui_file = get_existing_file(self.get_path(), self.data.get('dlc-ui-file'))
+    if ui_file is None:
+      # print(self.data.get('ui-file'))
+      ui_file = get_existing_file(self.get_path(), self.data.get('ui-file'))
     if ui_file is not None:
-      if drawer.is_file(ui_file):
-        return ui_file
+      return ui_file
 
   def get_ui_info(self) -> dict:
     ui_file = self.get_ui_file()
