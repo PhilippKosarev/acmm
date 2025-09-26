@@ -160,6 +160,11 @@ class SubAsset:
       if ui_dir is not None:
         return get_existing_file(ui_dir, self.data.get('ui-file'))
 
+    def get_preview(self):
+      ui_dir = self.get_ui_dir()
+      if ui_dir is not None:
+        return get_existing_file(ui_dir, self.data.get('preview-file'))
+
     def get_outline(self):
       ui_dir = self.get_ui_dir()
       if ui_dir is not None:
