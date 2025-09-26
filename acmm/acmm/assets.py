@@ -81,18 +81,15 @@ class GenericAsset(BaseAsset):
       preview = get_existing_file(self.get_path(), self.data.get('dlc-preview-file'))
     if preview is None:
       preview = get_existing_file(self.get_path(), self.data.get('preview-file'))
-    if preview is not None:
-      return preview
+    return preview
 
   def get_ui_file(self) -> str:
     ui_file = None
     if self.get_origin() == AssetOrigin.DLC:
       ui_file = get_existing_file(self.get_path(), self.data.get('dlc-ui-file'))
     if ui_file is None:
-      # print(self.data.get('ui-file'))
       ui_file = get_existing_file(self.get_path(), self.data.get('ui-file'))
-    if ui_file is not None:
-      return ui_file
+    return ui_file
 
   def get_ui_info(self) -> dict:
     ui_file = self.get_ui_file()
@@ -284,6 +281,16 @@ class Asset:
         'category': 'ppfilters',
       })
 
+    def get_ui_file(self):
+      return self.get_path()
+
+    def get_ui_info(self):
+      ui_file = self.get_ui_file()
+      data = notebook.read_ini(ui_file)
+      about = data.get('ABOUT')
+      if about is not None:
+        return dict(about)
+
     def get_id(self):
       basename = drawer.get_basename(self.get_path())
       return basename.removesuffix('.ini')
@@ -354,9 +361,8 @@ class Asset:
 
     def get_ui_file(self):
       origin = self.get_lang()
-      file = self.data.get(origin).get('ui-file')
-      if drawer.is_file(file):
-        return file
+      file = get_existing_file(self.get_path(), self.data.get(origin).get('ui-file'))
+      return file
 
     def get_ui_info(self):
       ui_file = self.get_ui_file()
