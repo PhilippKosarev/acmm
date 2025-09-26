@@ -158,16 +158,12 @@ class SubAsset:
     def get_ui_file(self):
       ui_dir = self.get_ui_dir()
       if ui_dir is not None:
-        file = ui_dir + '/' + self.data.get('ui-file')
-        if drawer.is_file(file):
-          file
+        return get_existing_file(ui_dir, self.data.get('ui-file'))
 
     def get_outline(self):
       ui_dir = self.get_ui_dir()
       if ui_dir is not None:
-        file = self.get_ui_dir() + '/' + self.data.get('outline-file')
-        if drawer.is_file(file):
-          return file
+        return get_existing_file(ui_dir, self.data.get('outline-file'))
 
 
 # A container for asset classes.
