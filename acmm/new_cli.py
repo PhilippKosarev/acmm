@@ -34,9 +34,6 @@ asset_info = {
   acmm.Asset.App: {
     'title': 'Apps',
   },
-  # acmm.Asset.CSP: {
-  #   'title': 'Extensions',
-  # },
 }
 
 # Helper functions
@@ -149,6 +146,11 @@ def print_assets(assets: list, include_size: bool):
     heading += [')']
     asset_ids = [asset.get_id() for asset in assets]
     asset_ids.sort()
+    for index in range(len(asset_ids)):
+      asset_id = asset_ids[index]
+      if ' ' in asset_id:
+        asset_id = f'"{asset_id}"'
+        asset_ids[index] = asset_id
     sections.append(
       ' '.join(heading) + '\n' + typewriter.list_to_columns(asset_ids) + '\n'
     )
