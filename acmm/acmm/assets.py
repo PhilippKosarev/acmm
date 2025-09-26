@@ -8,7 +8,7 @@ warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
 
 # Internal imports
 from .data import data
-from .base_asset import BaseAsset
+from .base_asset import BaseAsset, InvalidAsset
 from . import checker
 
 # Shorthand vars
@@ -112,7 +112,6 @@ class SubAsset:
     checks = [
       (checker.file_exists, 'preview.jpg'),
       (checker.file_exists, 'livery.png'),
-      (checker.file_exists, 'ui_skin.json'),
     ]
 
     def __init__(self, *args, **kwargs):
@@ -223,7 +222,10 @@ class Asset:
       if drawer.is_folder(skins_dir):
         skin_dirs = drawer.get_folders(skins_dir)
         for path in skin_dirs:
-          skins.append(SubAsset.CarSkin(path))
+          try:
+            skins.append(SubAsset.CarSkin(path))
+          except InvalidAsset:
+            continue
       return skins
 
   class Track(GenericAsset):
