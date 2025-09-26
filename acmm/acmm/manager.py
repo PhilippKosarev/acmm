@@ -45,17 +45,23 @@ class Manager:
     self.check_ac_dir(ac_dir)
     self.ac_dir = ac_dir
 
-  def fetch_assets(self, asset_class: Asset):
-    directory, get_function = fetch_functions.get(asset_class)
-    directory = f'{self.ac_dir}/{directory}'
-    assets = []
-    paths = get_function(directory)
-    for path in paths:
-      try:
-        assets.append(asset_class(path))
-      except InvalidAsset:
-        continue
-    return assets
+  def fetch_assets(self, asset_class: Asset = None):
+    if asset_class is None:
+      assets = []
+      for asset_class in Asset.get_asset_classes():
+        assets += self.fetch_assets(asset_class)
+      return assets
+    else:
+      directory, get_function = fetch_functions.get(asset_class)
+      directory = f'{self.ac_dir}/{directory}'
+      assets = []
+      paths = get_function(directory)
+      for path in paths:
+        try:
+          assets.append(asset_class(path))
+        except InvalidAsset:
+          continue
+      return assets
 
   def get_asset_flag(asset: Asset) -> str:
     ui_info = asset.get_ui_info()
