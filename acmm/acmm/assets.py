@@ -371,5 +371,5 @@ class Asset:
         if ui_file.endswith('.json'):
           data = clean_ui_dict(notebook.read_json(ui_file))
         elif ui_file.endswith('.ini'):
-          data = notebook.read_ini(ui_file)
+          data = notebook.read_ini(ui_file).get('ABOUT')
         return data
