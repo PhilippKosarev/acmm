@@ -357,10 +357,8 @@ class Asset:
 
     def get_icon(self):
       origin = self.get_lang()
-      if origin is AppLang.LUA:
-        file = self.data.get(origin).get('icon-file')
-        if drawer.is_file(file):
-          return file
+      file = get_existing_file(self.get_path(), self.data.get(origin).get('icon-file'))
+      return file
 
     def get_ui_file(self):
       origin = self.get_lang()
