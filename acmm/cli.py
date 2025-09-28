@@ -6,7 +6,7 @@ from multiprocessing import Process, SimpleQueue
 import sys, os, time
 
 # Internal imports
-import acmm.legacy as acmm
+from .acmm import legacy as acmm
 mod_fetcher = acmm.ModFetcher()
 mod_installer = acmm.ModInstaller()
 
@@ -132,7 +132,7 @@ def print_mod_category(title: str, mods: list):
   mod_ids = []
   for mod in mods:
     mod_ids.append(mod.get('mod_id'))
-  mods_columns = typewriter.list_to_columns(mod_ids, None, 2)
+  mods_columns = typewriter.list_to_columns(mod_ids, 0, 2)
   typewriter.print(f"{mods_columns}\n")
 
 def clean_temp_dir():
