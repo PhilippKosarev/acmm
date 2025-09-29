@@ -63,7 +63,7 @@ class Manager:
           continue
       return assets
 
-  def get_asset_flag(asset: Asset) -> str:
+  def get_asset_flag(self, asset: Asset) -> str:
     ui_info = asset.get_ui_info()
     country = ui_info.get('country')
     if country is not None:
