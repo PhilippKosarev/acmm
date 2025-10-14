@@ -68,10 +68,13 @@ class Manager:
     country = ui_info.get('country')
     if country is not None:
       country = country.replace('.', '').strip()
+      flag = f'{self.ac_dir}/content/gui/NationFlags/{country.upper()}.png'
+      if drawer.is_file(flag):
+        return flag
       country = pycountry.countries.get(name=country)
       if country is not None:
         iso_3166 = country.alpha_3
-        flag = f'{AC_DIR}/content/gui/NationFlags/{iso_3166}.png'
+        flag = f'{self.ac_dir}/content/gui/NationFlags/{iso_3166}.png'
         if drawer.is_file(flag):
           return flag
 
