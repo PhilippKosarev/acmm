@@ -44,7 +44,7 @@ def find_cars(path: str) -> list:
 def find_tracks(path: str) -> list:
   files = drawer.get_files_recursive(path)
   kn5_folders = []
-  kn5_files = clipboard.match_suffix(files, ".kn5")
+  kn5_files = [file for file in files if file.endswith('.kn5')]
   for file in kn5_files:
     basename = drawer.get_basename(file).removesuffix('.kn5')
     parent = drawer.get_parent(file)
@@ -54,7 +54,7 @@ def find_tracks(path: str) -> list:
     else:
       kn5_folders.append(parent)
   kn5_folders = clipboard.deduplicate(kn5_folders)
-  map_files = clipboard.match_suffix(files, "map.png")
+  map_files = [file for file in files if file.endswith('map.png')]
   map_parents = clipboard.deduplicate(drawer.get_parents(map_files))
   mod_paths = clipboard.get_duplicates(kn5_folders, map_parents)
   if mod_paths == []:
@@ -65,7 +65,7 @@ def find_tracks(path: str) -> list:
 def find_ppfilters(path: str) -> list:
   markers = ['[DOF]', '[COLOR]']
   files = drawer.get_files_recursive(path)
-  ini_files = clipboard.match_suffix(files, ".ini")
+  ini_files = [file for file in files if file.endswith('.ini')]
   mod_paths = []
   for file in ini_files:
     try:
@@ -85,7 +85,7 @@ def find_ppfilters(path: str) -> list:
 def find_python_apps(path: str) -> list:
   mod_paths = []
   files = drawer.get_files_recursive(path)
-  python_files = clipboard.match_suffix(files, ".py")
+  python_files = [file for file in files if file.endswith('.py')]
   for file in python_files:
     basename = drawer.get_basename(file).removesuffix('.py')
     parent = drawer.get_parent(file)
@@ -97,7 +97,7 @@ def find_python_apps(path: str) -> list:
 def find_lua_apps(path: str) -> list:
   mod_paths = []
   files = drawer.get_files_recursive(path)
-  lua_files = clipboard.match_suffix(files, ".lua")
+  lua_files = [file for file in files if file.endswith('.lua')]
   for file in lua_files:
     basename = drawer.get_basename(file).removesuffix('.lua')
     parent = drawer.get_parent(file)
@@ -111,7 +111,7 @@ def find_apps(path: str) -> list:
 
 def find_weather(path: str) -> list:
   files = drawer.get_files_recursive(path)
-  weather_files = clipboard.match_suffix(files, "/weather.ini")
+  weather_files = [file for file in files if file.endswith('/weather.ini')]
   weather_folders = clipboard.deduplicate(drawer.get_parents(weather_files))
   weather_parents = clipboard.deduplicate(drawer.get_parents(weather_folders))
   if len(weather_parents) != 1:
