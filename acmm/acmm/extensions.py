@@ -15,16 +15,17 @@ class Extension:
       (checker.dir_exists,  'extension'),
     ]
 
-    def __init__(self):
-      super().__init__(*args, **kwargs)
+    def __init__(self, path):
+      super().__init__(path)
       self.data.update({
-        'manifest-file': f'{self.path}/extension/config/data_manifest.ini',
-        'credits-file': f'{self.path}/extension/config/data_credits.txt',
+        'manifest-file': f'{path}/extension/config/data_manifest.ini',
+        'credits-file': f'{path}/extension/config/data_credits.txt',
       })
 
     def get_size(self, human_readable: bool = False) -> int or tuple:
-      size = drawer.get_filesize(f'{self.path}/extension')
-      size += drawer.get_filesize(f'{self.path}/dwrite.dll')
+      path = self.get_path()
+      size = drawer.get_filesize(f'{path}/extension')
+      size += drawer.get_filesize(f'{path}/dwrite.dll')
       if human_readable:
         return drawer.get_readable_filesize(size)
       return size
@@ -55,7 +56,7 @@ class Extension:
       }
       manifest_file = self.get_manifest_file()
       if manifest_file is not None:
-        manifest = notebook.read_ini(ini_file)
+        manifest = notebook.read_ini(manifest_file)
         for desired_section in desired_info:
           section_values = manifest.get(desired_section)
           for original_key, renamed_key in desired_info.get(desired_section):
@@ -78,6 +79,15 @@ class Extension:
       version = info.get('version')
       return f'csp_v{version}'
 
+    def trash(self):
+      path = self.get_path()
+      extension_dir = f'{path}/extension'
+      drawer.trash_path(extension_dir)
+
+    def delete(self):
+      path = self.get_path()
+      extension_dir = f'{path}/extension'
+      drawer.delete_path(extension_dir)
 
   # class Pure:
   #   pass
