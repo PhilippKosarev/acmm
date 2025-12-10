@@ -6,8 +6,8 @@ import sys, os, time, math
 
 # Internal imports
 import acmm
-from shared import manager, temp_dir, clean_temp_dir
-import csp_cli
+from .shared import manager, temp_dir, clean_temp_dir
+from . import csp_cli
 
 # Helper vars
 asset_info = {
@@ -266,7 +266,7 @@ class CLI:
 
   def csp(self, *args):
     'Manage your CSP installation'
-    return csp_cli.main(args, 'acmm-csp')
+    return csp_cli.run_as_subcli(args, 'acmm-csp')
 
 
 # Creating the CLI
@@ -296,7 +296,7 @@ def main() -> int:
     command_index = i
     if not arg.startswith('-'):
       break
-  if command_index <= len(all_args):
+  if command_index < len(all_args):
     command = all_args[command_index]
     if command == 'csp':
       subargs = all_args[command_index + 1:]

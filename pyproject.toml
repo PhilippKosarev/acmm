@@ -27,13 +27,14 @@ classifiers = [
 ]
 
 dependencies = [
-  "libjam == 0.1.7",
-  "pycountry >= 24.6.1",
+  "libjam == 0.1.8",
+  "pycountry >= 24.0.0",
   "bs4 >= 0.0.2",
+  "requests >= 2.0.0",
 ]
 
 [project.scripts]
-acmm = "acmm.cli:main_cli"
+acmm = "acmm.new_cli:main"
 
 [project.urls]
 Homepage = "https://github.com/philippkosarev/acmm"

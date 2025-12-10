@@ -5,7 +5,7 @@ from libjam import drawer, typewriter
 import acmm
 
 # Configuration
-from config import assetto_dir
+from .config import assetto_dir
 
 # Variables
 manager = acmm.Manager(assetto_dir)

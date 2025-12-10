@@ -6,7 +6,7 @@ import sys, os, time, math
 
 # Internal imports
 import acmm
-from shared import manager, temp_dir, clean_temp_dir
+from .shared import manager, temp_dir, clean_temp_dir
 
 # Helper functions
 def get_csp() -> acmm.Extension.CSP:
@@ -117,7 +117,7 @@ def main() -> int:
   return function(*args)
 
 def run_as_subcli(args: list , program: str) -> int:
-  captain = Captain(cli, program)
+  captain = Captain(cli, program=program)
   function, args = captain.parse(args)
   return function(*args)
 
