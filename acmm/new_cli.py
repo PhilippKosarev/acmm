@@ -5,12 +5,15 @@ from libjam import Captain, drawer, typewriter, flashcard
 import sys, os, time, math
 
 # Internal imports
-from config import assetto_dir
 import acmm
+from shared import manager, temp_dir, clean_temp_dir
+import csp_cli
 
 # Helper vars
-TEMP = drawer.get_temp() + '/acmm'
 asset_info = {
+  acmm.Extension.CSP: {
+    'title': 'Custom Shaders Patch',
+  },
   acmm.Asset.Car: {
     'title': 'Cars',
   },
@@ -29,12 +32,6 @@ asset_info = {
 }
 
 # Helper functions
-def clean_temp_dir():
-  if drawer.exists(TEMP):
-    typewriter.print_status('Cleaning temp dir...')
-    drawer.delete_folder(TEMP)
-  drawer.make_folder(TEMP)
-  typewriter.clear_lines(0)
 
 def asset_class_to_key(asset_class: acmm.Asset) -> str:
   return asset_class.__name__.lower()
@@ -94,30 +91,30 @@ def print_assets(assets: list, include_size: bool):
   categories = categorise_assets(assets)
   sections = []
   for assets in categories:
-    heading = [
-      typewriter.bolden(asset_info.get(type(assets[0])).get('title') + ':'),
-      '(',
-      str(len(assets)),
-    ]
+    asset_type = type(assets[0])
+    info = asset_info.get(asset_type)
+    if info is None:
+      raise NotImplementedError(f"Asset of type '{asset_type}' is missing an entry in 'asset_info'")
+    # Making a category heading
+    heading = typewriter.bolden(info.get('title') + ': ')
     if include_size:
       size = sum([asset.get_size() for asset in assets])
-      size = drawer.get_readable_filesize(size)
-      heading += [
-        '|',
-        str(round(size[0], 1)),
-        size[1].upper(),
-      ]
-    heading += [')']
+      size, units, _ = drawer.get_readable_filesize(size)
+      size = round(size, 1)
+      units = units.upper()
+      heading += f'( {len(assets)} | {size} {units} )'
+    else:
+      heading += f'({len(assets)})'
+    # Making asset_id list
     asset_ids = [asset.get_id() for asset in assets]
     asset_ids.sort()
-    for index in range(len(asset_ids)):
-      asset_id = asset_ids[index]
+    for i, asset_id in enumerate(asset_ids):
       if ' ' in asset_id:
-        asset_id = f'"{asset_id}"'
-        asset_ids[index] = asset_id
-    sections.append(
-      ' '.join(heading) + '\n' + typewriter.list_to_columns(asset_ids, 0, 2, 2) + '\n'
-    )
+        asset_ids[i] = f'"{asset_id}"'
+    asset_ids = typewriter.list_to_columns(asset_ids, 0, 2, 2)
+    # Appending section
+    sections.append(f'{heading}\n{asset_ids}\n')
+  # Printing
   print('\n'.join(sections))
 
 def get_delay(num: int, delay_min: float, delay_max: float) -> float:
@@ -133,12 +130,9 @@ def get_delay(num: int, delay_min: float, delay_max: float) -> float:
 # The command line interface for acmm.
 class CLI:
   'A CLI mod manager for Assetto Corsa'
-  def __init__(self, ac_dir: str):
-    self.manager = acmm.Manager(ac_dir)
-
   def list(self):
     'Lists installed mods'
-    assets = get_installed_assets(self.manager, opts)
+    assets = get_installed_assets(manager, opts)
     if len(assets) == 0:
       typewriter.print('No mods found.')
     else:
@@ -167,7 +161,7 @@ class CLI:
           basename = drawer.get_basename(path)
           def print_extract_progress(done: int, todo: int):
             typewriter.print_progress(f"Extracting '{basename}'", done, todo)
-          out_dir = TEMP + '/' + basename
+          out_dir = temp_dir + '/' + basename
           drawer.extract_archive(path, out_dir, print_extract_progress)
         else:
           out_dir = path
@@ -181,7 +175,7 @@ class CLI:
     try:
       assets = []
       for path in unpacked:
-        assets += self.manager.find(path)
+        assets += manager.find(path)
     except KeyboardInterrupt:
       typewriter.clear_lines(0)
       print('Mod search aborted.')
@@ -207,9 +201,10 @@ class CLI:
       asset_id = asset.get_id()
       try:
         typewriter.print_progress(f"Installing '{asset_id}'", len(installed), n_assets)
-        asset = self.manager.install(asset, acmm.InstallMethod.UPDATE)
+        asset = manager.install(asset, acmm.InstallMethod.UPDATE)
         installed.append(asset)
       except KeyboardInterrupt:
+        typewriter.clear_lines(0)
         typewriter.print('Installation aborted.')
         if len(installed) == 0:
           print('No mods were installed yet.')
@@ -218,6 +213,7 @@ class CLI:
           print_assets(installed, opts.get('size'))
         return 130
       except NotImplementedError:
+        typewriter.clear_lines(0)
         print(f"Error: Mod '{asset_id}' is not installable. Aborting installation.")
         if len(installed) > 0:
           print('Already installed these mods:')
@@ -232,7 +228,7 @@ class CLI:
     if not mod_id:
       mod_id = ['']
     # Fetching and filtering mods
-    assets = get_installed_assets(self.manager, opts)
+    assets = get_installed_assets(manager, opts)
     assets = filter_by_id(assets, mod_id)
     n_assets = len(assets)
     if len(assets) == 0:
@@ -268,9 +264,13 @@ class CLI:
     typewriter.print(f"Deleted {len(deleted)} mods.")
     return 0
 
+  def csp(self, *args):
+    'Manage your CSP installation'
+    return csp_cli.main(args, 'acmm-csp')
+
 
 # Creating the CLI
-cli = CLI(assetto_dir)
+cli = CLI()
 captain = Captain(cli)
 # Adding options for filtering by asset category
 fetchable_categories = [
@@ -288,14 +288,28 @@ captain.add_option('kunos', ['kunos', 'k'], 'Filter out non Kunos assets')
 captain.add_option('size',  ['size', 's'],  'Show mod size on disk')
 
 def main() -> int:
+  # Checking whether to use the csp subcli
+  use_csp_subcli = False
+  all_args = sys.argv[1:]
+  command_index = 0
+  for i, arg in enumerate(all_args):
+    command_index = i
+    if not arg.startswith('-'):
+      break
+  if command_index <= len(all_args):
+    command = all_args[command_index]
+    if command == 'csp':
+      subargs = all_args[command_index + 1:]
+      return cli.csp(*subargs)
   # Parsing user input
   global opts
   function, args, opts = captain.parse()
   # Enabling all filters if none are active
-  n_enabled_categories = sum([
-    1 for category in fetchable_categories if opts.get(category)
-  ])
-  if n_enabled_categories == 0:
+  enabled_categories = 0
+  for category in fetchable_categories:
+    if opts.get(category):
+      enabled_categories += 1
+  if enabled_categories == 0:
     for category in fetchable_categories:
       opts[category] = True
   # Running and returning
