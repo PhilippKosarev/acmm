@@ -4,6 +4,7 @@ from enum import Enum
 
 # Internal imports
 from .assets import AppLang, Asset
+from .extensions import Extension
 from .data import data
 
 # Shorthand vars
@@ -24,6 +25,8 @@ def base_install(
     final_location = drawer.copy(from_path, to_path)
   elif install_method is InstallMethod.UPDATE:
     final_location = drawer.copy(from_path, to_path, overwrite=True)
+  else:
+    raise ValueError(f"Invalid install_method '{install_method}'")
   return final_location
 
 def install_generic(
@@ -31,11 +34,12 @@ def install_generic(
 ) -> Asset:
   # Getting info
   asset_path = asset.get_path()
-  final_location = f'{install_dir}/{drawer.get_basename(asset_path)}'
+  basename = drawer.get_basename(asset_path)
+  final_location = f'{install_dir}/{basename}'
   # Installing
   final_location = base_install(asset_path, final_location, install_method)
   # Returning
-  asset.path = final_location
+  asset.data['path'] = final_location
   return asset
 
 def install_app(
@@ -48,23 +52,24 @@ def install_app(
   }
   asset_path = asset.get_path()
   app_lang = lang_to_folder.get(asset.get_lang())
-  final_location = f'{install_dir}/{app_lang}/{drawer.get_basename(asset_path)}'
+  basename = drawer.get_basename(asset_path)
+  final_location = f'{install_dir}/{app_lang}/{basename}'
   # Installing
   final_location = base_install(asset_path, final_location, install_method)
   # Returning
-  asset.path = final_location
+  asset.data['path'] = final_location
   return asset
 
-# def install_csp(
-#   asset: Asset.CSP, install_dir: str, install_method: InstallMethod,
-# ) -> Asset.CSP:
-#   asset_path = asset.get_path()
-#   dwrite_file = asset_path + '/dwrite.dll'
-#   base_install(dwrite_file, install_dir, install_method)
-#   extension_dir = asset_path + '/extension'
-#   base_install(extension_dir, install_dir, install_method)
-#   asset.path = install_dir
-#   return asset
+def install_csp(
+  asset: Asset.CSP, install_dir: str, install_method: InstallMethod,
+) -> Asset.CSP:
+  asset_path = asset.get_path()
+  for path in [asset_path + '/dwrite.dll', asset_path + '/extension']:
+    basename = drawer.get_basename(path)
+    local_install_dir = f'{install_dir}/{basename}'
+    base_install(path, local_install_dir, install_method)
+  asset.data['path'] = install_dir
+  return asset
 
 # Mapping install functions
 install_functions = {
@@ -73,6 +78,5 @@ install_functions = {
   Asset.PPFilter: ( install_generic, asset_paths.get('ppfilters') ),
   Asset.Weather:  ( install_generic, asset_paths.get('weather')   ),
   Asset.App:      ( install_app,     asset_paths.get('apps')      ),
-  # Asset.CSP:      ( install_csp,     ''                           ),
+  Extension.CSP:  ( install_csp,     ''                           ),
 }
-

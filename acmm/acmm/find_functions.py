@@ -179,6 +179,7 @@ def find_weather(path: str) -> list:
 
 # Order is important here
 find_functions = {
+  Extension.CSP: find_csp,
   Asset.Car: find_cars,
   Asset.Track: find_tracks,
   Asset.PPFilter: find_ppfilters,
