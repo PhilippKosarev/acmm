@@ -1,6 +1,6 @@
 # Imports
 from libjam import drawer
-import pycountry
+import pycountry, requests
 
 # Internal imports
 from .data import data
@@ -84,6 +84,45 @@ class Manager:
     except InvalidAsset:
       return None
 
+  def fetch_csp_versions(self) -> dict:
+    # links
+    base_link =  'https://acstuff.club/patch/'
+    info_link = base_link + '?info='
+    get_link = base_link + '?get='
+    # Version start and end positions
+    version = [0, 1, 75]
+    cutoff = (0, 3, 0)
+    found_lead = False
+    # Main loop
+    found = {}
+    while True:
+      version_string = '.'.join([str(n) for n in version])
+      link = info_link + version_string
+      request = requests.get(link)
+      if request.status_code != 200:
+          raise ConnectionError()
+      if request.text != 'Unknown version':
+        found_lead = True
+        found[version_string] = {
+          'info': request.content,
+          'download-link': get_link + version_string,
+        }
+        version[2] += 1
+      else:
+        if (
+          version[0] >= cutoff[0] and
+          version[1] >= cutoff[1] and
+          version[2] >= cutoff[2]
+        ):
+          break
+        if found_lead:
+          version[1] += 1
+          version[2] = 0
+        else:
+          version[2] += 1
+        found_lead = False
+    return found
+
   def find(self, directory: str) -> list:
     found_paths = []
     found_assets = []
@@ -101,9 +140,15 @@ class Manager:
     asset: Asset or Extension,
     install_method: InstallMethod,
   ) -> Asset or Extension:
-    install_function, install_dir = install_functions.get(type(asset))
-    if install_function is None:
-      raise NotImplementedError()
-    return install_function(
-      asset, f'{self.ac_dir}/{install_dir}', install_method,
-    )
+    asset_type = type(asset)
+    pair = install_functions.get(asset_type)
+    if pair is None:
+      raise NotImplementedError(
+        f"Installation of assets of type '{asset_type}' is not implemented."
+      )
+    install_function, install_dir = pair
+    if install_dir:
+      install_dir = f'{self.ac_dir}/{install_dir}'
+    else:
+      install_dir = self.ac_dir
+    return install_function(asset, install_dir, install_method)
