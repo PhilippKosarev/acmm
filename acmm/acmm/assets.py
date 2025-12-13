@@ -1,10 +1,8 @@
 # Imports
 from libjam import drawer, notebook
 from enum import Enum
-from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
-import warnings
-
-warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
+import html
+import re
 
 # Internal imports
 from .data import data
@@ -14,23 +12,25 @@ from . import checker
 # Shorthand vars
 kunos_assets = data.get('kunos-assets')
 asset_paths = data.get('asset-paths')
+re_html_br_tag = re.compile('<.*?br.*?>')
 
 # Helper functions
-def get_existing_file(path_prefix: str, path: str):
+def get_existing_file(prefix: str, path: str):
   if path is not None:
-    file = path_prefix + '/' + path
+    file = prefix + '/' + path
     if drawer.is_file(file):
       return file
 
-def clean_ui_dict(data: dict) -> dict:
-  for key in data:
-    value = data.get(key)
+def unescape_json_dict(data: dict) -> dict:
+  for key, value in data.items():
     value_type = type(value)
     if value_type is dict:
-      value = clean_ui_dict(value)
+      value = unescape_json_dict(value)
     elif value_type is str:
-      value = value.replace('<br>', '\n')
-      value = BeautifulSoup(value, 'html.parser').get_text()
+      value = html.unescape(value)
+      value = re.sub(re_html_br_tag, '\n', value)
+    else:
+      continue
     data[key] = value
   return data
 
@@ -94,8 +94,8 @@ class GenericAsset(BaseAsset):
   def get_ui_info(self) -> dict:
     ui_file = self.get_ui_file()
     if ui_file is not None:
-      data = notebook.read_json(ui_file)
-      return clean_ui_dict(data)
+      data = unescape_json_dict(notebook.read_json(ui_file))
+      return data
 
   def trash(self):
     path = self.get_path()
@@ -369,7 +369,7 @@ class Asset:
       ui_file = self.get_ui_file()
       if ui_file is not None:
         if ui_file.endswith('.json'):
-          data = clean_ui_dict(notebook.read_json(ui_file))
+          data = unescape_json_dict(notebook.read_json(ui_file))
         elif ui_file.endswith('.ini'):
           data = notebook.read_ini(ui_file).get('ABOUT')
         return data
