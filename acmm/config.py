@@ -1,20 +1,24 @@
 # Imports
-from libjam import notebook, drawer
+from libjam import notebook
+from pathlib import Path
 import vdf
 
 # Backend
 import acmm
 
+home = Path.home()
+anchor = Path(home.anchor)
+
 # Defining default config
 likely_steam_dirs = [
-  '~/.local/share/Steam',
-  '~/.var/app/com.valvesoftware.Steam',
-  'C:/Program Files (x86)/Steam',
+  home / '.local' / 'share' / 'Steam',
+  home / '.var' / 'app' / 'com.valvesoftware.Steam' / 'data' / 'Steam',
+  anchor / 'Program Files (x86)' / 'Steam'
 ]
 default_steam_dir = None
-for directory in likely_steam_dirs:
-  if drawer.is_folder(directory):
-    default_steam_dir = directory
+for path in likely_steam_dirs:
+  if path.is_dir():
+    default_steam_dir = path
     break
 default_values = {
   'steam-directory': default_steam_dir,
@@ -41,42 +45,46 @@ if steam_dir is None:
     'Could not automatically find the Steam installation. '
     "Please specify the 'steam-directory' manually the config."
   )
-if not drawer.exists(steam_dir) or not steam_dir:
+steam_dir = Path(steam_dir)
+if not steam_dir.is_dir():
   config_obj.on_error(f"Specified 'steam-directory' does not exist")
 # Getting ac dir
-libraryfolders = f'{steam_dir}/config/libraryfolders.vdf'
-try:
-  libraryfolders = vdf.loads(drawer.read_file(libraryfolders))
-except FileNotFoundError:
+libraryfolders_file = steam_dir / 'config' / 'libraryfolders.vdf'
+if not libraryfolders_file.is_file():
   config_obj.on_error(
     f"Invalid Steam installation at '{steam_dir}'. "
-    f"The file '{libraryfolders}' does not exist."
+    f"The file '{libraryfolders_file}' does not exist."
   )
+libraryfolders = libraryfolders_file.read_text()
+libraryfolders = vdf.loads(libraryfolders)
 libraryfolders = list(libraryfolders.get('libraryfolders').values())
-found_in = None
+library_folder = None
 # Finding the right steamapps dir
 for item in libraryfolders:
   apps = item.get('apps')
   if appid in apps:
-    found_in = item.get('path')
+    library_folder = item.get('path')
     break
-if found_in is None:
-  config_obj.on_error('Assetto Corsa is not installed')
+if library_folder is None:
+  config_obj.on_error('Could not find Assetto Corsa')
 
 # Getting assetto dir
-steamapps = f'{found_in}/steamapps'
-compatdata = f'{steamapps}/compatdata'
-appmanifest = f'{steamapps}/appmanifest_{appid}.acf'
-try:
-  appmanifest = vdf.loads(drawer.read_file(appmanifest))
-except FileNotFoundError:
+library_dir = Path(library_folder)
+steamapps_dir = library_dir / 'steamapps'
+compatdata_dir = steamapps_dir / 'compatdata'
+appmanifest_file = steamapps_dir / f'appmanifest_{appid}.acf'
+
+if not appmanifest_file.is_file():
   config_obj.on_error(
     f"Invalid Steam installation at '{steam_dir}'. "
     f"The file '{appmanifest}' does not exist."
   )
-appmanifest = appmanifest.get('AppState')
-install_dir = appmanifest.get('installdir')
-assetto_dir = f'{steamapps}/common/{install_dir}'
+
+appmanifest = appmanifest_file.read_text()
+appmanifest = vdf.loads(appmanifest)
+install_dir = appmanifest.get('AppState').get('installdir')
+assetto_dir = steamapps_dir / 'common' / install_dir
+assetto_dir = str(assetto_dir)
 
 try:
   acmm.Manager.check_ac_dir(assetto_dir)
