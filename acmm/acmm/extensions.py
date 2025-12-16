@@ -17,11 +17,10 @@ class Extension:
     validate = staticmethod(validate_functions.is_csp)
     def __init__(self, path):
       super().__init__(path)
-      path = self.get_path()
-      config_dir = path / 'extension' / 'config'
+      config_dir = ['extension', 'config']
       self.data.update({
-        'manifest-file': config_dir / 'data_manifest.ini',
-        'credits-file': config_dir / 'data_credits.txt',
+        'manifest-file': [*config_dir, 'data_manifest.ini'],
+        'credits-file':  [*config_dir, 'data_credits.txt'],
       })
 
     def get_id(self) -> str:
@@ -43,11 +42,13 @@ class Extension:
 
     def get_manifest_file(self) -> Path:
       manifest_file = self.data.get('manifest-file')
+      manifest_file = self.get_path() / Path(*manifest_file)
       if manifest_file.is_file():
         return manifest_file
 
     def get_credits_file(self) -> Path:
       credits_file = self.data.get('credits-file')
+      credits_file = self.get_path() / Path(*credits_file)
       if credits_file.is_file():
         return credits_file
 
@@ -78,7 +79,7 @@ class Extension:
           info[renamed_key] = value
       credits_file = self.get_credits_file()
       if not credits_file:
-        info
+        return info
       credits = credits_file.read_text()
       credits = re.sub(re_csp_credits_tag, '', credits)
       info['credits'] = credits
