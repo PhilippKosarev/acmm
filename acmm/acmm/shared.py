@@ -12,10 +12,11 @@ def get_paths_recursive(directory: Path) -> list[Path]:
 
 def unlink_dir(directory: Path):
   for path in directory.iterdir():
-    if path.is_file():
-      path.unlink()
-    else:
+    if path.is_dir():
       unlink_dir(path)
+    else:
+      path.unlink()
+  directory.rmdir()
 
 # Returns the size of a given file.
 def get_file_size(path: Path) -> int:
