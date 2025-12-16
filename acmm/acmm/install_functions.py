@@ -1,14 +1,11 @@
 # Imports
-from libjam import drawer
+from pathlib import Path
 from enum import Enum
+import shutil
 
 # Internal imports
 from .assets import AppLang, Asset
 from .extensions import Extension
-from .data import data
-
-# Shorthand vars
-asset_paths = data.get('asset-paths')
 
 # Enums
 class InstallMethod(Enum):
@@ -17,66 +14,74 @@ class InstallMethod(Enum):
 
 # Install functions
 def base_install(
-  from_path: str, to_path: str, install_method: InstallMethod,
+  source: Path, destination: Path, install_method: InstallMethod,
 ) -> str:
   if install_method is InstallMethod.CLEAN:
-    if drawer.exists(to_path):
-      drawer.trash_path(to_path)
-    final_location = drawer.copy(from_path, to_path)
+    if destination.exists():
+      destination.unlink()
+    source.copy_into(destination)
   elif install_method is InstallMethod.UPDATE:
-    final_location = drawer.copy(from_path, to_path, overwrite=True)
+    if source.is_dir():
+      destination = destination / source.name
+      shutil.copytree(source, destination, dirs_exist_ok=True)
+    else:
+      source.copy_into(destination)
   else:
     raise ValueError(f"Invalid install_method '{install_method}'")
-  return final_location
 
 def install_generic(
   asset: Asset, install_dir: str, install_method: InstallMethod,
 ) -> Asset:
   # Getting info
   asset_path = asset.get_path()
-  basename = drawer.get_basename(asset_path)
-  final_location = f'{install_dir}/{basename}'
-  # Installing
-  final_location = base_install(asset_path, final_location, install_method)
-  # Returning
-  asset.data['path'] = final_location
+  base_install(asset_path, install_dir, install_method)
+  asset.data['path'] = install_dir / asset_path.name
   return asset
 
 def install_app(
   asset: Asset.App, install_dir: str, install_method: InstallMethod,
 ) -> Asset.App:
   # Getting info
-  lang_to_folder = {
+  lang_to_dir = {
     AppLang.PYTHON: 'python',
     AppLang.LUA: 'lua',
   }
   asset_path = asset.get_path()
-  app_lang = lang_to_folder.get(asset.get_lang())
-  basename = drawer.get_basename(asset_path)
-  final_location = f'{install_dir}/{app_lang}/{basename}'
-  # Installing
-  final_location = base_install(asset_path, final_location, install_method)
-  # Returning
-  asset.data['path'] = final_location
+  lang_dir = lang_to_dir.get(asset.get_lang())
+  install_dir = install_dir / lang_dir
+  base_install(asset_path, install_dir, install_method)
+  asset.data['path'] = install_dir / asset_path.name
   return asset
 
 def install_csp(
-  asset: Asset.CSP, install_dir: str, install_method: InstallMethod,
+  asset: Asset.CSP, install_dir: Path, install_method: InstallMethod,
 ) -> Asset.CSP:
   asset_path = asset.get_path()
-  for path in [asset_path + '/dwrite.dll', asset_path + '/extension']:
-    basename = drawer.get_basename(path)
-    local_install_dir = f'{install_dir}/{basename}'
-    base_install(path, local_install_dir, install_method)
+  dwrite_file = asset_path / 'dwrite.dll'
+  extension_dir = asset_path / 'extension'
+  for destination in [dwrite_file, extension_dir]:
+    base_install(destination, install_dir, install_method)
   asset.data['path'] = install_dir
-  return asset
+  return install_dir
 
 # Mapping install functions
-install_functions = {
-  Asset.Car:      ( install_generic, asset_paths.get('cars')      ),
-  Asset.Track:    ( install_generic, asset_paths.get('tracks')    ),
-  Asset.PPFilter: ( install_generic, asset_paths.get('ppfilters') ),
-  Asset.Weather:  ( install_generic, asset_paths.get('weather')   ),
-  Asset.App:      ( install_app,     asset_paths.get('apps')      ),
-  Extension.CSP:  ( install_csp,     ''                           ),
+functions = {
+  Extension.CSP:  (install_csp,     None       ),
+  Asset.Car:      (install_generic, 'cars'     ),
+  Asset.Track:    (install_generic, 'tracks'   ),
+  Asset.PPFilter: (install_generic, 'ppfilters'),
+  Asset.Weather:  (install_generic, 'weather'  ),
+  Asset.App:      (install_app,     'apps'     ),
 }
+
+def get(key, default=None, /):
+  return functions.get(key, default)
+
+def items():
+  return functions.items()
+
+def keys():
+  return functions.keys()
+
+def values():
+  return functions.values()

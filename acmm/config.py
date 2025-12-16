@@ -13,7 +13,8 @@ anchor = Path(home.anchor)
 likely_steam_dirs = [
   home / '.local' / 'share' / 'Steam',
   home / '.var' / 'app' / 'com.valvesoftware.Steam' / 'data' / 'Steam',
-  anchor / 'Program Files (x86)' / 'Steam'
+  anchor / 'Program Files (x86)' / 'Steam',
+  anchor / 'Program Files' / 'Steam',
 ]
 default_steam_dir = None
 for path in likely_steam_dirs:
@@ -84,11 +85,12 @@ appmanifest = appmanifest_file.read_text()
 appmanifest = vdf.loads(appmanifest)
 install_dir = appmanifest.get('AppState').get('installdir')
 assetto_dir = steamapps_dir / 'common' / install_dir
-assetto_dir = str(assetto_dir)
 
 try:
-  acmm.Manager.check_ac_dir(assetto_dir)
+  acmm.Manager.check_assetto_dir(assetto_dir)
 except FileNotFoundError:
   config_obj.on_error('Assetto Corsa directory does not exist')
-except acmm.InvalidACDir:
+except NotADirectoryError:
+  config_obj.on_error('What the hell did you do to your Assetto Corsa installation?')
+except acmm.InvalidAssettoDir:
   config_obj.on_error('Invalid Assetto Corsa directory')

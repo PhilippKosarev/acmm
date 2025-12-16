@@ -1,90 +1,109 @@
 # Imports
-from libjam import drawer
-import pycountry, requests
+from pathlib import Path
+import pycountry
 
 # Internal imports
-from .data import data
+from . import (
+  data,
+  shared,
+  fetch_functions,
+  install_functions,
+)
 from .base_asset import InvalidAsset
 from .assets import Asset
 from .extensions import Extension
-from .fetch_functions import fetch_functions
-from .find_functions import find_functions
-from .install_functions import install_functions, InstallMethod
 
 # Useful vars
-asset_paths = data.get('asset-paths')
+InstallMethod = install_functions.InstallMethod
+asset_dirs = data.get('asset-dirs')
 
 # Exceptions
-class InvalidACDir(Exception):
+class InvalidAssettoDir(Exception):
   pass
 
-# Helper functions
-def is_subpath_of(item: str, all_paths: list):
-  for path in all_paths:
-    if item.startswith(path):
-      return True
-  return False
-
+# Internal functions
+def find_assets_in_dir(self, path: Path) -> list:
+  # Vars
+  asset_classes = [Extension.CSP] + Asset.get_classes()
+  subpaths = [path] + shared.get_paths_recursive(path)
+  path_str = str(path)
+  found_paths = []
+  assets = []
+  # Main loop
+  for asset_class in asset_classes:
+    for subpath in subpaths:
+      subpath_relative = str(subpath).removeprefix(path_str)
+      is_subpath = False
+      for found_path in found_paths:
+        if subpath_relative.startswith(found_path):
+          is_subpath = True
+          break
+      if is_subpath:
+        continue
+      try:
+        asset = asset_class(subpath)
+      except InvalidAsset:
+        continue
+      assets.append(asset)
+      found_paths.append(subpath_relative)
+  # Returning
+  return assets
 
 # Manages assets for Assetto Corsa.
 class Manager:
 
   @staticmethod
-  def check_ac_dir(ac_dir: str):
-    if not drawer.is_folder(ac_dir):
+  def check_assetto_dir(assetto_dir):
+    assetto_dir = Path(assetto_dir)
+    if not assetto_dir.exists():
       raise FileNotFoundError(
-        f"Specified AC directory at '{ac_dir}' does not exist."
+        f"Specified assetto_dir '{assetto_dir}' does not exist"
       )
-    for path in asset_paths.values():
-      if not drawer.is_folder(f'{ac_dir}/{path}'):
-        raise InvalidACDir(
-          f"Missing required path '{path}' in AC directory '{ac_dir}'."
+    if not assetto_dir.is_dir():
+      raise NotADirectoryError(
+        f"Specified assetto_dir '{assetto_dir}' is not a directory"
+      )
+    for pathlist in asset_dirs.values():
+      path = assetto_dir / Path(*pathlist)
+      if not path.is_dir():
+        raise InvalidAssettoDir(
+          f"Missing required directory '{subpath}' in assetto_dir"
         )
+    return assetto_dir
 
-  def __init__(self, ac_dir: str):
-    self.check_ac_dir(ac_dir)
-    self.ac_dir = ac_dir
+  def __init__(self, assetto_dir):
+    self.assetto_dir = self.check_assetto_dir(assetto_dir)
 
-  def fetch_assets(self, asset_class: Asset = None):
+  def fetch_assets(self, asset_class: Asset = None) -> list:
     if asset_class is None:
       assets = []
-      for asset_class in Asset.get_asset_classes():
+      for asset_class in Asset.get_classes():
         assets += self.fetch_assets(asset_class)
       return assets
-    else:
-      directory, get_function = fetch_functions.get(asset_class)
-      directory = f'{self.ac_dir}/{directory}'
-      assets = []
-      paths = get_function(directory)
-      for path in paths:
-        try:
-          assets.append(asset_class(path))
-        except InvalidAsset:
-          continue
-      return assets
+    pair = fetch_functions.get(asset_class)
+    if not pair:
+      raise TypeError(f"Invalid asset type '{asset_type}'")
+    get_function, category = pair
+    pathlist = asset_dirs.get(category)
+    asset_dir = self.assetto_dir / Path(*pathlist)
+    found_paths = get_function(asset_dir)
+    assets = []
+    for subpath in found_paths:
+      try:
+        asset = asset_class(subpath)
+        assets.append(asset)
+      except InvalidAsset:
+        continue
+    return assets
 
-  def get_asset_flag(self, asset: Asset) -> str:
-    ui_info = asset.get_ui_info()
-    country = ui_info.get('country')
-    if country is not None:
-      country = country.replace('.', '').strip()
-      flag = f'{self.ac_dir}/content/gui/NationFlags/{country.upper()}.png'
-      if drawer.is_file(flag):
-        return flag
-      country = pycountry.countries.get(name=country)
-      if country is not None:
-        iso_3166 = country.alpha_3
-        flag = f'{self.ac_dir}/content/gui/NationFlags/{iso_3166}.png'
-        if drawer.is_file(flag):
-          return flag
-
-  def fetch_extension(self, extension: Extension):
-    try:
-      return extension(self.ac_dir)
-    except InvalidAsset:
-      return None
+  def fetch_extension(self, extension_class: Extension):
+    valid = extension_class.validate(self.assetto_dir)
+    if valid:
+      return extension_class(self.assetto_dir)
 
   def fetch_csp_versions(self) -> dict:
+    # importing on-demand for faster overall import times
+    import requests
     # links
     base_link =  'https://acstuff.club/patch/'
     info_link = base_link + '?info='
@@ -98,6 +117,7 @@ class Manager:
     while True:
       version_string = '.'.join([str(n) for n in version])
       link = info_link + version_string
+      # print(link)
       request = requests.get(link)
       if request.status_code != 200:
           raise ConnectionError()
@@ -123,17 +143,13 @@ class Manager:
         found_lead = False
     return found
 
-  def find(self, directory: str) -> list:
-    found_paths = []
-    found_assets = []
-    for asset_class in find_functions:
-      find_function = find_functions.get(asset_class)
-      for path in find_function(directory):
-        if is_subpath_of(path, found_paths):
-          continue
-        found_paths.append(path)
-        found_assets.append(asset_class(path))
-    return found_assets
+  def find_assets(self, path) -> list:
+    path = Path(path)
+    subdirs = [subpath for subpath in path.iterdir() if subpath.is_dir()]
+    assets = []
+    for subdir in subdirs:
+      assets += find_assets_in_dir(self, subdir)
+    return assets
 
   def install(
     self,
@@ -142,13 +158,31 @@ class Manager:
   ) -> Asset or Extension:
     asset_type = type(asset)
     pair = install_functions.get(asset_type)
-    if pair is None:
-      raise NotImplementedError(
-        f"Installation of assets of type '{asset_type}' is not implemented."
-      )
-    install_function, install_dir = pair
-    if install_dir:
-      install_dir = f'{self.ac_dir}/{install_dir}'
+    if not pair:
+      raise TypeError(f"Invalid asset type '{asset_type}'")
+    install_function, category = pair
+    if category:
+      pathlist = asset_dirs.get(category)
     else:
-      install_dir = self.ac_dir
+      pathlist = []
+    install_dir = self.assetto_dir / Path(*pathlist)
     return install_function(asset, install_dir, install_method)
+
+  def get_asset_flag(self, asset: Asset) -> str:
+    ui_info = asset.get_ui_info()
+    if not ui_info:
+      return
+    country = ui_info.get('country')
+    if not country:
+      return
+    country = country.replace('.', '').strip()
+    country = pycountry.countries.get(name=country)
+    if country is None:
+      return
+    iso_3166 = country.alpha_3
+    flag_basename = iso_3166 + '.png'
+    flags_dir = self.assetto_dir / 'content' / 'gui' / 'NationFlags'
+    flag_file = flags_dir / flag_basename
+    if not flag_file.is_file():
+      return
+    return flag_file

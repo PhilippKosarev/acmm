@@ -1,25 +1,43 @@
 # Imports
-from libjam import drawer
+from pathlib import Path
 
 # Internal imports
 from .assets import Asset
-from .data import data
-
-# Shorthand vars
-asset_paths = data.get('asset-paths')
 
 # Fetch functions
-def get_app_paths(directory: str):
-  paths = []
-  for folder in drawer.get_folders(directory):
-    paths += drawer.get_folders(folder)
-  return paths
+def get_dirs(path: Path) -> list[Path]:
+  dirs = [subpath for subpath in path.iterdir() if subpath.is_dir()]
+  return dirs
+
+def get_files(path: Path) -> list[Path]:
+  files = [subpath for subpath in path.iterdir() if subpath.is_file()]
+  return files
+
+def get_app_dirs(path: Path) -> list[Path]:
+  python_dir = path / 'python'
+  app_dirs = get_dirs(python_dir)
+  lua_dir = path / 'lua'
+  if lua_dir.is_dir():
+    app_dirs += get_dirs(lua_dir)
+  return app_dirs
 
 # Fetch info
-fetch_functions = {
-  Asset.Car:      (asset_paths.get('cars'),      drawer.get_folders),
-  Asset.Track:    (asset_paths.get('tracks'),    drawer.get_folders),
-  Asset.PPFilter: (asset_paths.get('ppfilters'), drawer.get_files),
-  Asset.Weather:  (asset_paths.get('weather'),   drawer.get_folders),
-  Asset.App:      (asset_paths.get('apps'),      get_app_paths),
+functions = {
+  Asset.Car:      (get_dirs,  'cars'     ),
+  Asset.Track:    (get_dirs,  'tracks'   ),
+  Asset.PPFilter: (get_files, 'ppfilters'),
+  Asset.Weather:  (get_dirs,  'weather'  ),
+  Asset.App:      (get_app_dirs,  'apps'     ),
 }
+
+def get(key, default=None, /):
+  return functions.get(key, default)
+
+def items():
+  return functions.items()
+
+def keys():
+  return functions.keys()
+
+def values():
+  return functions.values()

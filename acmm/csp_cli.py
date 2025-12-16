@@ -22,7 +22,8 @@ class CLI:
       print('CSP is not installed.')
       return 1
     info = csp.get_ui_info()
-    size, units, _ = csp.get_size(human_readable=True)
+    size = csp.get_size()
+    size, units, _ = drawer.get_readable_filesize(size)
     size = round(size, 1)
     units = units.upper()
     info.update({'size': f'{size} {units}'})
@@ -106,7 +107,7 @@ class CLI:
     if csp is None:
       print('CSP is not installed')
       return 1
-    csp.trash()
+    csp.delete()
 
 
 cli = CLI()

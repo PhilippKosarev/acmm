@@ -1,25 +1,32 @@
 # Imports
-from libjam import drawer, notebook
+from libjam import notebook
+from pathlib import Path
 from enum import Enum
 import html
 import re
 
 # Internal imports
-from .data import data
+from . import data, validate_functions, shared
 from .base_asset import BaseAsset, InvalidAsset
-from . import checker
 
 # Shorthand vars
 kunos_assets = data.get('kunos-assets')
-asset_paths = data.get('asset-paths')
 re_html_br_tag = re.compile('<.*?br.*?>')
 
 # Helper functions
-def get_existing_file(prefix: str, path: str):
-  if path is not None:
-    file = prefix + '/' + path
-    if drawer.is_file(file):
-      return file
+def get_existing(prefix: Path, basename: str):
+  if not prefix or not basename:
+    return None
+  path = prefix / basename
+  if path.exists():
+    return path
+
+def get_existing_iter(prefix: Path, pathlist: iter) -> Path or None:
+  if not prefix or not pathlist:
+    return
+  path = prefix / Path(*pathlist)
+  if path.exists():
+    return path
 
 def unescape_json_dict(data: dict) -> dict:
   for key, value in data.items():
@@ -37,145 +44,136 @@ def unescape_json_dict(data: dict) -> dict:
 # Enums
 class AssetOrigin(Enum):
   MOD = 0
-  KUNOS = 2
-  DLC = 1
+  KUNOS = 1
+  DLC = 2
 
 class AppLang(Enum):
   PYTHON = 0
   LUA = 1
 
+
 # Base for all assets in the Asset and SubAsset container.
 class GenericAsset(BaseAsset):
-  def __init__(self, *args, **kwargs):
-    super().__init__(*args, **kwargs)
-    self.data.update({
-      'category': None,
-    })
+  def __init__(self, path):
+    super().__init__(path)
 
   def get_id(self) -> str:
-    return drawer.get_basename(self.get_path())
+    path = self.get_path()
+    return path.name
 
-  def get_size(self, human_readable: bool = False) -> int or tuple:
-    size = drawer.get_filesize(self.get_path())
-    if human_readable:
-      return drawer.get_readable_filesize(size)
-    return size
+  def get_size(self) -> int:
+    path = self.get_path()
+    return shared.get_size(path)
 
   def get_origin(self) -> AssetOrigin:
     category = self.data.get('category')
-    if category is None:
-      return
-    if category not in kunos_assets:
-      return
     if self.get_id() in kunos_assets.get(category):
       ui_file = self.data.get('dlc-ui-file')
-      if ui_file is not None:
-        if drawer.is_file(ui_file):
+      if ui_file:
+        ui_file = self.get_path() / Path(*ui_file)
+        if ui_file.is_file():
           return AssetOrigin.DLC
       return AssetOrigin.KUNOS
     return AssetOrigin.MOD
 
-  def get_preview(self):
-    preview = None
-    if self.get_origin() is AssetOrigin.DLC:
-      preview = get_existing_file(self.get_path(), self.data.get('dlc-preview-file'))
-    if preview is None:
-      preview = get_existing_file(self.get_path(), self.data.get('preview-file'))
-    return preview
+  def get_preview_file(self) -> Path:
+    preview_file = None
+    origin = self.get_origin()
+    if origin is AssetOrigin.DLC:
+      preview_file = self.data.get('dlc-preview-file')
+    if preview_file is None:
+      preview_file = self.data.get('preview-file')
+    return get_existing_iter(self.get_path(), preview_file)
 
-  def get_ui_file(self) -> str:
+  def get_ui_file(self) -> Path:
     ui_file = None
     if self.get_origin() == AssetOrigin.DLC:
-      ui_file = get_existing_file(self.get_path(), self.data.get('dlc-ui-file'))
-    if ui_file is None:
-      ui_file = get_existing_file(self.get_path(), self.data.get('ui-file'))
-    return ui_file
+      ui_file = self.data.get('dlc-ui-file')
+    if not ui_file:
+      ui_file = self.data.get('ui-file')
+    return get_existing_iter(self.get_path(), ui_file)
 
   def get_ui_info(self) -> dict:
     ui_file = self.get_ui_file()
-    if ui_file is not None:
-      data = unescape_json_dict(notebook.read_json(ui_file))
-      return data
-
-  def trash(self):
-    path = self.get_path()
-    drawer.trash_path(path)
-    self.data['path'] = None
+    if not ui_file:
+      return
+    data = notebook.read_json(str(ui_file))
+    data = unescape_json_dict(data)
+    return data
 
   def delete(self):
     path = self.get_path()
-    drawer.delete_path(path)
-    self.data['path'] = None
+    shared.unlink_tree(path)
+
 
 class SubAsset:
   class CarSkin(GenericAsset):
-    checks = [
-      (checker.file_exists, 'preview.jpg'),
-      (checker.file_exists, 'livery.png'),
-    ]
-
-    def __init__(self, *args, **kwargs):
-      super().__init__(*args, **kwargs)
-      path = self.get_path()
+    validate = staticmethod(validate_functions.is_car_skin)
+    def __init__(self, path):
+      super().__init__(path)
       self.data.update({
-        'ui-file': 'ui_skin.json',
-        'preview-file': 'preview.jpg',
-        'livery-file': 'livery.png',
+        'ui-file':      ['ui_skin.json'],
+        'preview-file': ['preview.jpg'],
+        'livery-file':  ['livery.png'],
       })
 
-    def get_livery(self):
-      file = self.get_path() + '/' + self.data.get('livery-file')
-      if drawer.is_file(file):
-        return file
+    def get_livery_file(self) -> Path:
+      livery_file = self.data.get('livery-file')
+      return get_existing_iter(self.get_path(), livery_file)
 
   class TrackLayout(GenericAsset):
-    checks = [
-      (checker.file_exists, 'map.png'),
-      (checker.dir_exists,  'data'),
-    ]
-
-    def __init__(self, *args, **kwargs):
-      super().__init__(*args, **kwargs)
+    validate = staticmethod(validate_functions.is_track_layout)
+    def __init__(self, path):
+      super().__init__(path)
       self.data.update({
-        'map-file': 'map.png',
-        'ui-file': 'ui_track.json',
-        'preview-file': 'preview.png',
-        'outline-file': 'outline.png',
+        'map-file':         ['map.png'],
+        'dlc-ui-file':      ['dlc_ui_track.json'],
+        'ui-file':          ['ui_track.json'],
+        'dlc-preview-file': ['dlc_preview.png'],
+        'preview-file':     ['preview.png'],
+        'outline-file':     ['outline.png'],
       })
 
-    def get_map(self):
-      file = self.data.get('map-file')
-      if drawer.is_file(file):
-        return file
+    def get_map_file(self) -> Path:
+      map_file = self.data.get('map-file')
+      return get_existing_iter(self.get_path(), map_file)
 
-    def get_ui_dir(self):
-      track_folder = drawer.get_parent(self.get_path())
-      track_ui_folder = track_folder + '/' + 'ui'
-      layout_ui_folder = track_ui_folder + '/' + self.get_id()
-      if drawer.is_folder(layout_ui_folder):
-        return layout_ui_folder
+    def get_ui_dir(self) -> Path:
+      path = self.get_path()
+      ui_dir = path.parent / 'ui' / path.name
+      if ui_dir.is_dir():
+        return ui_dir
 
-    def get_ui_file(self):
+    def get_ui_file(self) -> Path:
+      ui_file = None
+      origin = self.get_origin()
+      if origin is AssetOrigin.DLC:
+        ui_file = self.data.get('dlc-ui-file')
+      if not ui_file:
+        ui_file = self.data.get('ui-file')
       ui_dir = self.get_ui_dir()
-      if ui_dir is not None:
-        return get_existing_file(ui_dir, self.data.get('ui-file'))
+      return get_existing(ui_dir, ui_file)
 
-    def get_preview(self):
+    def get_preview_file(self) -> Path:
+      preview_file = None
+      origin = self.get_origin()
+      if origin is AssetOrigin.DLC:
+        preview_file = self.data.get('dlc-preview-file')
+      if not preview_file:
+        preview_file = self.data.get('preview-file')
       ui_dir = self.get_ui_dir()
-      if ui_dir is not None:
-        return get_existing_file(ui_dir, self.data.get('preview-file'))
+      return get_existing_iter(ui_dir, preview_file)
 
-    def get_outline(self):
+    def get_outline_file(self) -> Path:
       ui_dir = self.get_ui_dir()
-      if ui_dir is not None:
-        return get_existing_file(ui_dir, self.data.get('outline-file'))
+      outline_file = self.data.get('outline-file')
+      return get_existing_iter(ui_dir, outline_file)
 
 
 # A container for asset classes.
 class Asset:
-
   @classmethod
-  def get_asset_classes(cls):
+  def get_classes(cls):
     classes = []
     attributes = cls.__dict__.items()
     for key, value in attributes:
@@ -183,193 +181,180 @@ class Asset:
         classes.append(value)
     return classes
 
-  class Car(GenericAsset):
-    checks = [
-      # Files
-      (checker.file_exists, 'collider.kn5'),
-      (checker.file_exists, 'driver_base_pos.knh'),
-      (checker.dir_exists, 'sfx'),
-      (checker.dir_exists, 'skins'),
-      (checker.dir_exists, 'ui',),
-      (checker.either_file_or_dir_exists, ('data.acd', 'data')),
-    ]
 
-    def __init__(self, *args, **kwargs):
-      super().__init__(*args, **kwargs)
+  class Car(GenericAsset):
+    validate = staticmethod(validate_functions.is_car)
+    def __init__(self, path):
+      super().__init__(path)
       path = self.get_path()
       self.data.update({
-        'category': 'cars',
-        'ui-file': 'ui/ui_car.json',
-        'dlc-ui-file': 'ui/dlc_ui_car.json',
-        'preview-file': 'ui/preview.jpg',
-        'badge-file': 'ui/badge.png',
-        'logo-file': 'logo.png',
-        'skins-dir': 'skins',
+        'category':         'cars',
+        'dlc-ui-file':      ['ui', 'dlc_ui_car.json'],
+        'ui-file':          ['ui', 'ui_car.json'],
+        'dlc-preview-file': ['ui', 'dlc_ui_car.json'],
+        'preview-file':     ['ui', 'preview.jpg'],
+        'badge-file':       ['ui', 'badge.png'],
+        'logo-file':        ['logo.png'],
+        'skins-dir':        'skins',
       })
 
-    def get_badge(self) -> str:
-      file = self.get_path() + '/' + self.data.get('badge-file')
-      if drawer.is_file(file):
-        return file
+    def get_badge_file(self) -> Path:
+      badge_file = self.data.get('badge-file')
+      return get_existing_iter(self.get_path(), badge_file)
 
-    def get_logo(self) -> str:
-      file = self.get_path() + '/' + self.data.get('logo-file')
-      if drawer.is_file(file):
-        return file
+    def get_logo_file(self) -> Path:
+      logo_file = self.data.get('logo-file')
+      return get_existing_iter(self.get_path(), logo_file)
 
-    def get_skins(self):
-      skins_dir = self.get_path() + '/' + self.data.get('skins-dir')
+    def get_skins(self) -> list[SubAsset.CarSkin]:
+      skins_dir = self.get_path() / self.data.get('skins-dir')
+      if not skins_dir.is_dir():
+        return
       skins = []
-      if drawer.is_folder(skins_dir):
-        skin_dirs = drawer.get_folders(skins_dir)
-        for path in skin_dirs:
-          try:
-            skins.append(SubAsset.CarSkin(path))
-          except InvalidAsset:
-            continue
-      return skins
-
-  class Track(GenericAsset):
-    required_files = [
-      ('ui', checker.dir_exists),
-    ]
-
-    def __init__(self, *args, **kwargs):
-      super().__init__(*args, **kwargs)
-      self.data.update({
-        'category': 'tracks',
-        'ui-file': 'ui/ui_track.json',
-        'dlc-ui-file': 'ui/dlc_ui_car.json',
-        'preview-file': 'ui/preview.png',
-        'outline-file': 'ui/outline.png',
-        'map-file': 'map.png',
-      })
-
-    def get_outline(self):
-      file = self.get_path() + '/' + self.data.get('outline-file')
-      if drawer.is_file(file):
-        return file
-
-    def get_map(self):
-      file = self.get_path() + '/' + self.data.get('map-file')
-      if drawer.is_file(file):
-        return file
-
-    def get_layouts(self):
-      non_layout_dirs = [
-        'ai', 'data', 'skins', 'ui',
-      ]
-      folders = drawer.get_folders(self.get_path())
-      folders = [
-        folder for folder in folders
-        if drawer.get_basename(folder) not in non_layout_dirs
-      ]
-      assets = []
-      for folder in folders:
+      for skin_dir in skins_dir.iterdir():
         try:
-          assets.append(SubAsset.TrackLayout(folder))
+          skin = SubAsset.CarSkin(skin_dir)
+          skins.append(skin)
         except InvalidAsset:
           continue
-      return assets
+      return skins
+
+
+  class Track(GenericAsset):
+    validate = staticmethod(validate_functions.is_track)
+    def __init__(self, path):
+      super().__init__(path)
+      self.data.update({
+        'category':         'tracks',
+        'dlc-ui-file':      ['ui', 'dlc_ui_car.json'],
+        'ui-file':          ['ui', 'ui_track.json'],
+        'dlc-preview-file': ['ui', 'preview.png'],
+        'preview-file':     ['ui', 'preview.png'],
+        'outline-file':     ['ui', 'outline.png'],
+        'map-file':         ['map.png'],
+      })
+
+    def get_outline_file(self) -> Path:
+      outline_file = self.data.get('outline-file')
+      return get_existing_iter(self.get_path(), outline_file)
+
+    def get_map_file(self) -> Path:
+      map_file = self.data.get('map-file')
+      return get_existing_iter(self.get_path(), map_file)
+
+    def get_layouts(self) -> list[SubAsset.TrackLayout]:
+      path = self.get_path()
+      non_layout_dirs = ['ai', 'data', 'skins', 'ui']
+      layouts = []
+      for subpath in path.iterdir():
+        if not subpath.is_dir():
+          continue
+        if subpath.name in non_layout_dirs:
+          continue
+        try:
+          layout = SubAsset.TrackLayout(subpath)
+          layouts.append(layout)
+        except InvalidAsset:
+          continue
+      return layouts
 
 
   class PPFilter(GenericAsset):
-    required_files = [
-      ('.ini', checker.path_endswith),
-    ]
-
-    def __init__(self, *args, **kwargs):
-      super().__init__(*args, **kwargs)
+    validate = staticmethod(validate_functions.is_ppfilter)
+    def __init__(self, path):
+      super().__init__(path)
       self.data.update({
         'category': 'ppfilters',
+        'ui-file': [],
       })
 
-    def get_ui_file(self):
-      return self.get_path()
-
-    def get_ui_info(self):
+    def get_ui_info(self) -> dict:
       ui_file = self.get_ui_file()
-      data = notebook.read_ini(ui_file)
+      data = notebook.read_ini(str(ui_file))
       about = data.get('ABOUT')
-      if about is not None:
+      if about:
         return dict(about)
 
-    def get_id(self):
-      basename = drawer.get_basename(self.get_path())
-      return basename.removesuffix('.ini')
+    def get_id(self) -> str:
+      path = self.get_path()
+      return path.name.removesuffix('.ini')
+
+    def delete(self):
+      path = self.get_path()
+      path.unlink()
 
 
   class Weather(GenericAsset):
-    required_files = [
-      ('weather.ini', checker.file_exists),
-    ]
-
-    def __init__(self, *args, **kwargs):
-      super().__init__(*args, **kwargs)
+    validate = staticmethod(validate_functions.is_weather)
+    def __init__(self, path):
+      super().__init__(path)
       self.data.update({
-        'category': 'weather',
-        'ui-file': 'weather.ini',
-        'preview-file': 'preview.jpg',
+        'category':     'weather',
+        'ui-file':      ['weather.ini'],
+        'preview-file': ['preview.jpg'],
       })
 
-    def get_ui_info(self):
-      ui_file = self.get_path() + '/' + self.data.get('ui-file')
-      data = notebook.read_ini(ui_file)
+    def get_ui_info(self) -> dict:
+      ui_file = self.get_ui_file()
+      if not ui_file:
+        return
+      data = notebook.read_ini(str(ui_file))
       launcher_info = data.get('LAUNCHER')
       cm_info = data.get('__LAUNCHER_CM')
       data = launcher_info
-      if cm_info is not None:
+      if cm_info:
         data.update(cm_info)
       return data
 
 
   class App(GenericAsset):
-    required_files = [
-      (('.lua', '.py'), checker.has_file_ending_with_either),
-    ]
-
-    def __init__(self, *args, **kwargs):
-      super().__init__(*args, **kwargs)
+    validate = staticmethod(validate_functions.is_app)
+    def __init__(self, path):
+      super().__init__(path)
       self.data.update({
         'category': 'apps',
         AppLang.PYTHON: {
-          'ui-file': 'ui/ui_app.json',
+          'ui-file': ['ui', 'ui_app.json'],
         },
         AppLang.LUA: {
-          'ui-file': 'manifest.ini',
-          'icon-file': 'icon.png',
+          'ui-file':   ['manifest.ini'],
+          'icon-file': ['icon.png'],
         },
       })
 
-    def get_lang(self):
-      files = drawer.get_files(self.get_path())
-      for file in files:
-        if file.endswith('.py'):
-          return AppLang.PYTHON
-        if file.endswith('.lua'):
-          return AppLang.LUA
+    def get_lang(self) -> AppLang:
+      path = self.get_path()
+      py_file = path / (path.name + '.py')
+      lua_file = path / (path.name + '.lua')
+      if py_file.is_file():
+        return AppLang.PYTHON
+      if lua_file.is_file():
+        return AppLang.LUA
+      raise InvalidAsset('Missing script file')
 
-    def get_origin(self):
+    def get_origin(self) -> AssetOrigin:
       if self.get_lang() is AppLang.PYTHON:
-        if self.get_id() in kunos_assets.get(self.data.get('category')):
+        kunos_apps = kunos_assets.get(self.data.get('category'))
+        if self.get_id() in kunos_apps:
           return AssetOrigin.KUNOS
       return AssetOrigin.MOD
 
-    def get_icon(self):
-      origin = self.get_lang()
-      file = get_existing_file(self.get_path(), self.data.get(origin).get('icon-file'))
-      return file
+    def get_icon(self) -> Path:
+      lang = self.get_lang()
+      icon_file = self.data.get(lang).get('icon-file')
+      return get_existing_iter(self.get_path(), icon_file)
 
-    def get_ui_file(self):
-      origin = self.get_lang()
-      file = get_existing_file(self.get_path(), self.data.get(origin).get('ui-file'))
-      return file
+    def get_ui_file(self) -> Path:
+      lang = self.get_lang()
+      ui_file = self.data.get(lang).get('ui-file')
+      return get_existing_iter(self.get_path(), ui_file)
 
-    def get_ui_info(self):
+    def get_ui_info(self) -> dict:
       ui_file = self.get_ui_file()
-      if ui_file is not None:
-        if ui_file.endswith('.json'):
-          data = unescape_json_dict(notebook.read_json(ui_file))
-        elif ui_file.endswith('.ini'):
-          data = notebook.read_ini(ui_file).get('ABOUT')
-        return data
+      lang = self.get_lang()
+      if lang is AppLang.PYTHON:
+        data = notebook.read_json(str(ui_file))
+        data = unescape_json_dict(data)
+      elif lang is AppLang.LUA:
+        data = notebook.read_ini(ui_file).get('ABOUT')
+      return data

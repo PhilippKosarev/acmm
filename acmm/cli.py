@@ -60,7 +60,7 @@ def filter_assets_by_origin(assets: list, opts: dict) -> list:
   return filtered_assets
 
 def get_installed_assets(manager: acmm.Manager, opts: dict) -> list:
-  asset_classes = acmm.Asset.get_asset_classes()
+  asset_classes = acmm.Asset.get_classes()
   assets = []
   for asset_class in asset_classes:
     # Checking if category is enabled
@@ -175,7 +175,7 @@ class CLI:
     try:
       assets = []
       for path in unpacked:
-        assets += manager.find(path)
+        assets += manager.find_assets(path)
     except KeyboardInterrupt:
       typewriter.clear_lines(0)
       print('Mod search aborted.')
@@ -275,7 +275,7 @@ captain = Captain(cli)
 # Adding options for filtering by asset category
 fetchable_categories = [
   asset_class_to_key(asset_class)
-  for asset_class in acmm.Asset.get_asset_classes()
+  for asset_class in acmm.Asset.get_classes()
 ]
 for category in fetchable_categories:
   captain.add_option(
