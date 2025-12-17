@@ -1,16 +1,9 @@
 # Imports
 from pathlib import Path
-from enum import Enum
 import shutil
 
 # Internal imports
-from .assets import AppLang, Asset
-from .extensions import Extension
-
-# Enums
-class InstallMethod(Enum):
-  UPDATE = 0
-  CLEAN = 1
+from .shared import *
 
 # Install functions
 def base_install(
@@ -30,58 +23,38 @@ def base_install(
     raise ValueError(f"Invalid install_method '{install_method}'")
 
 def install_generic(
-  asset: Asset, install_dir: str, install_method: InstallMethod,
-) -> Asset:
+  asset_path: Path, install_dir: str, install_method: InstallMethod,
+) -> Path:
   # Getting info
-  asset_path = asset.get_path()
   base_install(asset_path, install_dir, install_method)
-  asset.data['path'] = install_dir / asset_path.name
-  return asset
+  return install_dir / asset_path.name
 
 def install_app(
-  asset: Asset.App, install_dir: str, install_method: InstallMethod,
-) -> Asset.App:
+  asset_path: Path, install_dir: str, install_method: InstallMethod,
+) -> Path:
   # Getting info
   lang_to_dir = {
     AppLang.PYTHON: 'python',
     AppLang.LUA: 'lua',
   }
-  asset_path = asset.get_path()
-  lang_dir = lang_to_dir.get(asset.get_lang())
+  py_file = asset_path / asset_path.name + '.py'
+  lua_file = asset_path / asset_path.name + '.lua'
+  if py_file.is_file():
+    lang = AppLang.PYTHON
+  elif lua_file.is_file():
+    lang = AppLang.LUA
+  else:
+    raise FileNotFoundError("Could not find the app's script file")
+  lang_dir = lang_to_dir.get(lang)
   install_dir = install_dir / lang_dir
   base_install(asset_path, install_dir, install_method)
-  asset.data['path'] = install_dir / asset_path.name
-  return asset
+  return install_dir / asset_path.name
 
 def install_csp(
-  asset: Asset.CSP, install_dir: Path, install_method: InstallMethod,
-) -> Asset.CSP:
-  asset_path = asset.get_path()
+  asset_path: Path, install_dir: Path, install_method: InstallMethod,
+) -> Path:
   dwrite_file = asset_path / 'dwrite.dll'
   extension_dir = asset_path / 'extension'
   for destination in [dwrite_file, extension_dir]:
     base_install(destination, install_dir, install_method)
-  asset.data['path'] = install_dir
   return install_dir
-
-# Mapping install functions
-functions = {
-  Extension.CSP:  (install_csp,     None       ),
-  Asset.Car:      (install_generic, 'cars'     ),
-  Asset.Track:    (install_generic, 'tracks'   ),
-  Asset.PPFilter: (install_generic, 'ppfilters'),
-  Asset.Weather:  (install_generic, 'weather'  ),
-  Asset.App:      (install_app,     'apps'     ),
-}
-
-def get(key, default=None, /):
-  return functions.get(key, default)
-
-def items():
-  return functions.items()
-
-def keys():
-  return functions.keys()
-
-def values():
-  return functions.values()

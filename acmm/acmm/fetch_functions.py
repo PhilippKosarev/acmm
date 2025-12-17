@@ -1,9 +1,6 @@
 # Imports
 from pathlib import Path
 
-# Internal imports
-from .assets import Asset
-
 # Fetch functions
 def get_dirs(path: Path) -> list[Path]:
   dirs = [subpath for subpath in path.iterdir() if subpath.is_dir()]
@@ -20,24 +17,3 @@ def get_app_dirs(path: Path) -> list[Path]:
   if lua_dir.is_dir():
     app_dirs += get_dirs(lua_dir)
   return app_dirs
-
-# Fetch info
-functions = {
-  Asset.Car:      (get_dirs,  'cars'     ),
-  Asset.Track:    (get_dirs,  'tracks'   ),
-  Asset.PPFilter: (get_files, 'ppfilters'),
-  Asset.Weather:  (get_dirs,  'weather'  ),
-  Asset.App:      (get_app_dirs,  'apps'     ),
-}
-
-def get(key, default=None, /):
-  return functions.get(key, default)
-
-def items():
-  return functions.items()
-
-def keys():
-  return functions.keys()
-
-def values():
-  return functions.values()

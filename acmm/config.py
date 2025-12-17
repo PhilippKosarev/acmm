@@ -48,7 +48,7 @@ if steam_dir is None:
   )
 steam_dir = Path(steam_dir)
 if not steam_dir.is_dir():
-  config_obj.on_error(f"Specified 'steam-directory' does not exist")
+  config_obj.on_error("Specified 'steam-directory' does not exist")
 # Getting ac dir
 libraryfolders_file = steam_dir / 'config' / 'libraryfolders.vdf'
 if not libraryfolders_file.is_file():
@@ -78,7 +78,7 @@ appmanifest_file = steamapps_dir / f'appmanifest_{appid}.acf'
 if not appmanifest_file.is_file():
   config_obj.on_error(
     f"Invalid Steam installation at '{steam_dir}'. "
-    f"The file '{appmanifest}' does not exist."
+    f"The file '{appmanifest_file}' does not exist."
   )
 
 appmanifest = appmanifest_file.read_text()

@@ -3,34 +3,22 @@ from pathlib import Path
 import pycountry
 
 # Internal imports
-from . import (
-  data,
-  shared,
-  fetch_functions,
-  install_functions,
-)
-from .base_asset import InvalidAsset
+from . import utils
+from .shared import *
+from .subassets import SubAsset
 from .assets import Asset
 from .extensions import Extension
-
-# Useful vars
-InstallMethod = install_functions.InstallMethod
-asset_dirs = data.get('asset-dirs')
-
-# Exceptions
-class InvalidAssettoDir(Exception):
-  pass
 
 # Internal functions
 def find_assets_in_dir(self, path: Path) -> list:
   # Vars
-  asset_classes = [Extension.CSP] + Asset.get_classes()
-  subpaths = [path] + shared.get_paths_recursive(path)
+  findable_classes = Extension.get_classes() + Asset.get_classes()
+  subpaths = [path] + utils.get_paths_recursive(path)
   path_str = str(path)
   found_paths = []
   assets = []
   # Main loop
-  for asset_class in asset_classes:
+  for asset_class in findable_classes:
     for subpath in subpaths:
       subpath_relative = str(subpath).removeprefix(path_str)
       is_subpath = False
@@ -49,9 +37,9 @@ def find_assets_in_dir(self, path: Path) -> list:
   # Returning
   return assets
 
+
 # Manages assets for Assetto Corsa.
 class Manager:
-
   @staticmethod
   def check_assetto_dir(assetto_dir):
     assetto_dir = Path(assetto_dir)
@@ -63,11 +51,12 @@ class Manager:
       raise NotADirectoryError(
         f"Specified assetto_dir '{assetto_dir}' is not a directory"
       )
-    for pathlist in asset_dirs.values():
+    for asset_class in Asset.get_classes():
+      pathlist = asset_class.__pathlist__
       path = assetto_dir / Path(*pathlist)
       if not path.is_dir():
         raise InvalidAssettoDir(
-          f"Missing required directory '{subpath}' in assetto_dir"
+          f"Missing required directory '{path}' in assetto_dir"
         )
     return assetto_dir
 
@@ -80,13 +69,10 @@ class Manager:
       for asset_class in Asset.get_classes():
         assets += self.fetch_assets(asset_class)
       return assets
-    pair = fetch_functions.get(asset_class)
-    if not pair:
-      raise TypeError(f"Invalid asset type '{asset_type}'")
-    get_function, category = pair
-    pathlist = asset_dirs.get(category)
-    asset_dir = self.assetto_dir / Path(*pathlist)
-    found_paths = get_function(asset_dir)
+    fetch_function = asset_class.__fetch__
+    pathlist = asset_class.__pathlist__
+    path = self.assetto_dir / Path(*pathlist)
+    found_paths = fetch_function(path)
     assets = []
     for subpath in found_paths:
       try:
@@ -96,10 +82,11 @@ class Manager:
         continue
     return assets
 
-  def fetch_extension(self, extension_class: Extension):
-    valid = extension_class.validate(self.assetto_dir)
-    if valid:
+  def fetch_extension(self, extension_class: Extension) -> Extension:
+    try:
       return extension_class(self.assetto_dir)
+    except InvalidAsset:
+      return None
 
   def fetch_csp_versions(self) -> dict:
     # importing on-demand for faster overall import times
@@ -117,7 +104,6 @@ class Manager:
     while True:
       version_string = '.'.join([str(n) for n in version])
       link = info_link + version_string
-      # print(link)
       request = requests.get(link)
       if request.status_code != 200:
           raise ConnectionError()
@@ -156,17 +142,12 @@ class Manager:
     asset: Asset or Extension,
     install_method: InstallMethod,
   ) -> Asset or Extension:
-    asset_type = type(asset)
-    pair = install_functions.get(asset_type)
-    if not pair:
-      raise TypeError(f"Invalid asset type '{asset_type}'")
-    install_function, category = pair
-    if category:
-      pathlist = asset_dirs.get(category)
-    else:
-      pathlist = []
+    asset_class = type(asset)
+    install_function = asset_class.__install__
+    pathlist = asset_class.__pathlist__
     install_dir = self.assetto_dir / Path(*pathlist)
-    return install_function(asset, install_dir, install_method)
+    asset.path = install_function(asset.path, install_dir, install_method)
+    return asset
 
   def get_asset_flag(self, asset: Asset) -> str:
     ui_info = asset.get_ui_info()

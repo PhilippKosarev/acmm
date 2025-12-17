@@ -1,16 +1,5 @@
 # Data
 data = {
-
-  # Paths
-  ## Asset path suffixes
-  'asset-dirs': {
-    'cars':      ['content', 'cars'],
-    'tracks':    ['content', 'tracks'],
-    'apps':      ['apps'],
-    'ppfilters': ['system', 'cfg', 'ppfilters'],
-    'weather':   ['content', 'weather'],
-  },
-
   # Lists of Kunos-made assets
   'kunos-assets': {
     # Cars
@@ -220,12 +209,12 @@ data = {
       'spa',
       'trento-bondone',
     ],
-    # PP Filters
-    'ppfilters': ['b&w', 'blue_steel', 'custom config example', 'default', 'default_bright', 'default_dark', 'movie', 'natural', 'photographic', 'sepia', 'vintage'],
     # Weather
     'weather': ['1_heavy_fog', '2_light_fog', '3_clear', '4_mid_clear', '5_light_clouds', '6_mid_clouds', '7_heavy_clouds'],
     # Apps
     'apps': ['Chat', 'gMeter', 'system'],
+    # PP Filters
+    'ppfilters': ['b&w', 'blue_steel', 'custom config example', 'default', 'default_bright', 'default_dark', 'movie', 'natural', 'photographic', 'sepia', 'vintage'],
   },
 
   # CSP related data

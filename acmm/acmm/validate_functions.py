@@ -84,7 +84,7 @@ def is_track_layout(path: Path) -> bool:
   preview_file = ui_dir / 'preview.png'
   outline_file = ui_dir / 'outline.png'
   required_dirs = [path, data_dir, ui_dir]
-  required_files = [map_file, ui_file, preview_file]
+  required_files = [map_file, ui_file, preview_file, outline_file]
   return validate_dirs_and_files(required_dirs, required_files)
 
 # Returns True if given path is a path to a track.

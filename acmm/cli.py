@@ -2,10 +2,10 @@
 
 # Imports
 from libjam import Captain, drawer, typewriter, flashcard
-import sys, os, time, math
+import sys, time, math
 
 # Internal imports
-import acmm
+from . import acmm
 from .shared import manager, temp_dir, clean_temp_dir
 from . import csp_cli
 
@@ -108,6 +108,7 @@ def print_assets(assets: list, include_size: bool):
     # Making asset_id list
     asset_ids = [asset.get_id() for asset in assets]
     asset_ids.sort()
+    # Adding quotes around asset ids with spaces
     for i, asset_id in enumerate(asset_ids):
       if ' ' in asset_id:
         asset_ids[i] = f'"{asset_id}"'
@@ -249,8 +250,7 @@ class CLI:
       try:
         typewriter.print_status(f"Deleting '{asset_id}'...")
         time.sleep(delay)
-        asset.trash()
-        # drawer.trash_path(asset_path)
+        asset.delete()
       except KeyboardInterrupt:
         typewriter.print('Deletion aborted.')
         if len(deleted) == 0:
@@ -289,7 +289,6 @@ captain.add_option('size',  ['size', 's'],  'Show mod size on disk')
 
 def main() -> int:
   # Checking whether to use the csp subcli
-  use_csp_subcli = False
   all_args = sys.argv[1:]
   command_index = 0
   for i, arg in enumerate(all_args):
