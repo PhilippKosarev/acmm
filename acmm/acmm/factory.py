@@ -27,13 +27,19 @@ def is_asset_path_valid(self) -> bool:
       return True
   return False
 
-def asset_repr(self, valid: bool = None) -> str:
-  string = f'<{self.__class__.__name__} asset at {hex(id(self))}'
+def asset_repr(self) -> str:
+  name = self.__class__.__name__
+  string = f'{name} asset '
   if is_asset_path_valid(self):
-    string += f" with id <str '{self.get_id()}'>"
+    string += f"'{self.get_id()}'"
   else:
-    string += ' with broken path>'
-  return string
+    string += 'with broken path'
+  return f'<{string} at {hex(id(self))}>'
+
+def container_repr(self):
+  name = self.__class__.__name__
+  string = f'{name} container'
+  return f'<{string}>'
 
 # Returns all subclasses of given class.
 def get_classes(cls):
@@ -45,7 +51,11 @@ def get_classes(cls):
   return classes
 
 # Creates asset classes and assigns them to a given container.
-def assign_assets(container: object, asset_list: list):
+def create(container_name: str, asset_list: list):
+  container = type(container_name, (object,), {
+    '__repr__': container_repr,
+    'get_classes': classmethod(get_classes),
+  })
   for items in asset_list:
     # Validating data
     assert len(items) == 6
@@ -84,4 +94,4 @@ def assign_assets(container: object, asset_list: list):
     for function_name, function in asset_functions.items():
       setattr(asset_class, function_name, function)
     setattr(container, asset_name, asset_class)
-    setattr(container, 'get_classes', classmethod(get_classes))
+  return container()

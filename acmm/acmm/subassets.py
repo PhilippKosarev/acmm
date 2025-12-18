@@ -97,7 +97,4 @@ subasset_list = [
   ),
 ]
 
-class SubAsset:
-  pass
-factory.assign_assets(SubAsset, subasset_list)
-SubAsset = SubAsset()
+SubAsset = factory.create('SubAsset', subasset_list)

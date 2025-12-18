@@ -97,8 +97,4 @@ extensions_list = [
   ),
 ]
 
-# Assigning to container
-class Extension:
-  pass
-factory.assign_assets(Extension, extensions_list)
-Extension = Extension()
+Extension = factory.create('Extension', extensions_list)

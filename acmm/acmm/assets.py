@@ -261,7 +261,7 @@ ppfilter_functions = {
 asset_list = [
   (
     'Car',
-    fetch_functions.get_dirs,
+    fetch_functions.get_paths,
     validate_functions.is_car,
     install_functions.install_generic,
     ['content', 'cars'],
@@ -269,7 +269,7 @@ asset_list = [
   ),
   (
     'Track',
-    fetch_functions.get_dirs,
+    fetch_functions.get_paths,
     validate_functions.is_track,
     install_functions.install_generic,
     ['content', 'tracks'],
@@ -277,7 +277,7 @@ asset_list = [
   ),
   (
     'Weather',
-    fetch_functions.get_dirs,
+    fetch_functions.get_paths,
     validate_functions.is_weather,
     install_functions.install_generic,
     ['content', 'weather'],
@@ -293,7 +293,7 @@ asset_list = [
   ),
   (
     'PPFilter',
-    fetch_functions.get_files,
+    fetch_functions.get_paths,
     validate_functions.is_ppfilter,
     install_functions.install_generic,
     ['system', 'cfg', 'ppfilters'],
@@ -301,8 +301,4 @@ asset_list = [
   ),
 ]
 
-# Creating assets
-class Asset:
-  pass
-factory.assign_assets(Asset, asset_list)
-Asset = Asset()
+Asset = factory.create('Asset', asset_list)
