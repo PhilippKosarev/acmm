@@ -1,61 +1,39 @@
 # Imports
 from pathlib import Path
+import os
 
 # Internal imports
 from . import data
 
-# Internal functions
-def find_case_insensitive(path: Path) -> Path:
-  if not path.parent.exists():
-    return None
-  basename = path.name.lower()
-  for subpath in path.parent.iterdir():
-    if subpath.name.lower() == basename:
-      return subpath
-  return None
-
-# Returns True if all given dirs and files exist, case insensitive.
-def validate_dirs_and_files(dirs: list[Path], files: list[Path]) -> bool:
-  for directory in dirs:
-    if not directory.is_dir():
-      directory = find_case_insensitive(directory)
-      if not directory:
-        return False
-      if not directory.is_dir():
-        return False
-  for file in files:
-    if not file.is_file():
-      file = find_case_insensitive(file)
-      if not file:
-        return False
-      if not file.is_file():
-        return False
-  return True
-
-# Returns True if given path is a path to CSP.
-def is_csp(path: Path) -> bool:
-  if not path.is_dir():
+# Returns True if all given items exist in root, case insensitive.
+def validate(root: Path, items: list[str or tuple[str, list]]) -> bool:
+  if not root.is_dir():
     return False
-  csp_data = data.get('csp')
-  common_dirs = csp_data.get('common-dirs')
-  common_files = csp_data.get('common-files')
-  for pathlist in common_dirs:
-    subdir = path / Path(*pathlist)
-    if not subdir.is_dir():
-      return False
-  for pathlist in common_files:
-    subfile = path / Path(*pathlist)
-    if not subfile.is_file():
-      return False
+  entries = {entry.name.lower(): entry for entry in os.scandir(root)}
+  for item in items:
+    if type(item) is str:
+      entry = entries.get(item.lower())
+      if not entry:
+        return False
+      if not entry.is_file():
+        return False
+    else:
+      item, subitems = item
+      entry = entries.get(item.lower())
+      if not entry:
+        return False
+      if not entry.is_dir():
+        return False
+      if not validate(entry, subitems):
+        return False
   return True
 
 # Returns True if given path is a path to a car skin.
 def is_car_skin(path: Path) -> bool:
-  preview_file = path / 'preview.jpg'
-  livery_file = path / 'livery.png'
-  required_dirs = [path]
-  required_files = [preview_file, livery_file]
-  return validate_dirs_and_files(required_dirs, required_files)
+  return validate(path, [
+    'preview.jpg',
+    'livery.png',
+  ])
 
 # Returns True if given path is a path to a car.
 def is_car(path: Path) -> bool:
@@ -64,37 +42,39 @@ def is_car(path: Path) -> bool:
   data_dir = path / 'data'
   if not (data_file.is_file() or data_dir.is_dir()):
     return False
-  # Required dirs
-  ui_dir = path / 'ui'
-  sfx_dir = path / 'sfx'
-  required_dirs = [path, ui_dir, sfx_dir]
-  # Required files
-  collider_file = path / 'collider.kn5'
-  driver_pos_file = path / 'driver_base_pos.knh'
-  tyre_shadow_files = [path / f'tyre_{i}_shadow.png' for i in range(4)]
-  required_files = tyre_shadow_files + [collider_file, driver_pos_file]
-  return validate_dirs_and_files(required_dirs, required_files)
+  return validate(path, [
+    ('ui', []),
+    ('sfx', []),
+    'collider.kn5',
+    'driver_base_pos.knh',
+    'tyre_0_shadow.png',
+    'tyre_1_shadow.png',
+    'tyre_2_shadow.png',
+    'tyre_3_shadow.png',
+  ])
 
 # Returns True if given path is a path to a track layout.
 def is_track_layout(path: Path) -> bool:
-  data_dir = path / 'data'
-  map_file = path / 'map.png'
-  ui_dir = path.parent / 'ui' / path.name
-  ui_file = ui_dir / 'ui_track.json'
-  preview_file = ui_dir / 'preview.png'
-  outline_file = ui_dir / 'outline.png'
-  required_dirs = [path, data_dir, ui_dir]
-  required_files = [map_file, ui_file, preview_file, outline_file]
-  return validate_dirs_and_files(required_dirs, required_files)
+  return validate(path.parent, [
+    (path.name, [
+      'map.png',
+      ('data', []),
+    ]),
+    ('ui', [
+      (path.name, [
+        'ui_track.json',
+        'preview.png',
+        'outline.png',
+      ]),
+    ]),
+  ])
 
 # Returns True if given path is a path to a track.
 def is_track(path: Path) -> bool:
-  track_basename = path.name + '.kn5'
-  track_file = path / track_basename
-  ui_dir = path / 'ui'
-  required_dirs = [path, ui_dir]
-  required_files = [track_file]
-  return validate_dirs_and_files(required_dirs, required_files)
+  return validate(path, [
+    ('ui', []),
+    path.name + '.kn5',
+  ])
 
 # Returns True if given path is a path to a ppfilter.
 def is_ppfilter(path: Path) -> bool:
@@ -111,33 +91,31 @@ def is_ppfilter(path: Path) -> bool:
 
 # Returns True if given path is a path to weather.
 def is_weather(path: Path) -> bool:
-  if not path.is_dir():
-    return False
-  for subpath in path.iterdir():
-    if not subpath.is_file():
-      continue
-    if subpath.name == 'weather.ini':
-      return True
-  return False
+  return validate(path, [
+    'weather.ini',
+  ])
 
 # Returns True if given path is a path to a Python app.
 def is_python_app(path: Path) -> bool:
-  if not path.is_dir():
-    return False
-  py_basename = path.name + '.py'
-  py_file = path / py_basename
-  return py_file.is_file()
+  return validate(path, [
+    path.name + '.py',
+  ])
 
 # Returns True if given path is a path to a Lua app.
 def is_lua_app(path: Path) -> bool:
-  manifest_file = path / 'manifest.ini'
-  icon_file = path / 'icon.png'
-  lua_basename = path.name + '.lua'
-  lua_file = path / lua_basename
-  required_dirs = [path]
-  required_files = [manifest_file, icon_file, lua_file]
-  return validate_dirs_and_files(required_dirs, required_files)
+  return validate(path, [
+    path.name + '.lua',
+    'manifest.ini',
+    'icon.png',
+  ])
 
 # Returns True if given path is a path to an app.
 def is_app(path: Path) -> bool:
   return is_python_app(path) or is_lua_app(path)
+
+# Returns True if given path is a path to CSP.
+def is_csp(path: Path) -> bool:
+  if not path.is_dir():
+    return False
+  common_files = data.get('csp-common-files')
+  return validate(path, common_files)
