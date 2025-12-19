@@ -58,3 +58,14 @@ def install_csp(
   for destination in [dwrite_file, extension_dir]:
     base_install(destination, install_dir, install_method)
   return install_dir
+
+def install_pure(
+  asset_path: Path, install_dir: Path, install_method: InstallMethod,
+) -> Path:
+  apps_dir = asset_path / 'apps'
+  content_dir = asset_path / 'content'
+  extension_dir = asset_path / 'extension'
+  system_dir = asset_path / 'system'
+  for destination in [apps_dir, content_dir, extension_dir, system_dir]:
+    base_install(destination, install_dir, InstallMethod.UPDATE)
+  return install_dir

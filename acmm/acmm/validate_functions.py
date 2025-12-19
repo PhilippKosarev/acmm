@@ -119,3 +119,10 @@ def is_csp(path: Path) -> bool:
     return False
   common_files = data.get('csp-common-files')
   return validate(path, common_files)
+
+# Returns True if given path is a path to Pure.
+def is_pure(path: Path) -> bool:
+  if not path.is_dir():
+    return False
+  common_files = data.get('pure-common-files')
+  return validate(path, common_files)
