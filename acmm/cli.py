@@ -2,17 +2,20 @@
 
 # Imports
 from libjam import Captain, drawer, typewriter, flashcard
-import sys, time, math
+import os, sys, time, math
 
 # Internal imports
 from . import acmm
 from .shared import manager, temp_dir, clean_temp_dir
-from . import csp_cli
+from . import extension_cli
 
 # Helper vars
 asset_info = {
   acmm.Extension.CSP: {
     'title': 'Custom Shaders Patch',
+  },
+  acmm.Extension.Pure: {
+    'title': 'Pure',
   },
   acmm.Asset.Car: {
     'title': 'Cars',
@@ -154,19 +157,19 @@ class CLI:
         return 1
     # Cleaning temp dir
     clean_temp_dir()
-    unpacked = []
     # Unpacking
     try:
       for path in paths:
+        basename = drawer.get_basename(path)
+        out_dir = temp_dir + '/' + basename
         if drawer.is_file(path):
-          basename = drawer.get_basename(path)
           def print_extract_progress(done: int, todo: int):
             typewriter.print_progress(f"Extracting '{basename}'", done, todo)
-          out_dir = temp_dir + '/' + basename
           drawer.extract_archive(path, out_dir, print_extract_progress)
         else:
-          out_dir = path
-        unpacked.append(out_dir)
+          def print_copy_progress(done: int, todo: int):
+            typewriter.print_progress(f"Copying '{basename}'", done, todo)
+          drawer.copy_folder(path, out_dir, progress_function=print_copy_progress)
     except KeyboardInterrupt:
       typewriter.clear_lines(0)
       print('Archive extraction aborted.')
@@ -174,9 +177,7 @@ class CLI:
     # Searching for mods
     typewriter.print_status('Searching for mods...')
     try:
-      assets = []
-      for path in unpacked:
-        assets += manager.find_assets(path)
+      assets = manager.find_assets(temp_dir)
     except KeyboardInterrupt:
       typewriter.clear_lines(0)
       print('Mod search aborted.')
@@ -264,9 +265,9 @@ class CLI:
     typewriter.print(f"Deleted {len(deleted)} mods.")
     return 0
 
-  def csp(self, *args):
-    'Manage your CSP installation'
-    return csp_cli.run_as_subcli(args, 'acmm-csp')
+  def extension(self, *args):
+    'Manage your extensions'
+    return extension_cli.run_as_subcli(args, 'acmm-extension')
 
 
 # Creating the CLI
@@ -288,7 +289,7 @@ captain.add_option('kunos', ['kunos', 'k'], 'Filter out non Kunos assets')
 captain.add_option('size',  ['size', 's'],  'Show mod size on disk')
 
 def main() -> int:
-  # Checking whether to use the csp subcli
+  # Checking whether to use the extension subcli
   all_args = sys.argv[1:]
   command_index = 0
   for i, arg in enumerate(all_args):
@@ -297,9 +298,9 @@ def main() -> int:
       break
   if command_index < len(all_args):
     command = all_args[command_index]
-    if command == 'csp':
+    if command == 'extension':
       subargs = all_args[command_index + 1:]
-      return cli.csp(*subargs)
+      return cli.extension(*subargs)
   # Parsing user input
   global opts
   function, args, opts = captain.parse()

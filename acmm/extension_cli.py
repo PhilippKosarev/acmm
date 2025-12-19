@@ -9,15 +9,32 @@ from . import acmm
 from .shared import manager, temp_dir, clean_temp_dir
 
 # Helper functions
-def get_csp() -> acmm.Extension.CSP:
-  return manager.fetch_extension(acmm.Extension.CSP)
+def format_info(
+  key_to_title: dict, info: dict, indent: int = 0, align_left: bool = False,
+) -> str:
+  indent = ' ' * indent
+  items = {}
+  for key in key_to_title:
+    value = info.get(key).strip()
+    title = key_to_title.get(key) + ':'
+    items[title] = value
+  longest_title = len(sorted(items.keys(), key=len, reverse=True)[0])
+  lines = []
+  for title, value in items.items():
+    if align_left:
+      title = f'{title:<{longest_title}}'
+    else:
+      title = f'{title:>{longest_title}}'
+    title = typewriter.bolden(title)
+    lines.append(f'{indent}{title} {value}')
+  return '\n'.join(lines)
 
 # The csp subcli for acmm.
 class CLI:
-  'Manages your CSP installation'
-  def info(self):
+  'Manages your Assetto Corsa extensions'
+  def csp_info(self):
     'Prints information about CSP'
-    csp = get_csp()
+    csp = manager.fetch_extension(acmm.Extension.CSP)
     if csp is None:
       print('CSP is not installed.')
       return 1
@@ -35,20 +52,9 @@ class CLI:
       'description': 'Description',
       # 'credits': 'Credits',
     }
-    items = {}
-    for key in key_to_title:
-      value = info.get(key).strip()
-      title = key_to_title.get(key)
-      items[title] = value
-    longest_title = len(sorted(items.keys(), key=len, reverse=True)[0])
-    lines = []
-    for title, value in items.items():
-      title = f'{title:>{longest_title}}'
-      title = typewriter.bolden(title + ':')
-      lines.append(f'{title} {value}')
-    print('\n'.join(lines))
+    print(format_info(key_to_title, info))
 
-  def install(self):
+  def install_csp(self):
     'Downloads and installs CSP'
     clean_temp_dir()
     typewriter.print_status('Fetching available versions...')
@@ -101,13 +107,50 @@ class CLI:
     clean_temp_dir()
     print('Installed.')
 
-  def uninstall(self):
+  def uninstall_csp(self):
     'Deletes Custom Shaders Patch'
-    csp = get_csp()
+    csp = manager.fetch_extension(acmm.Extension.CSP)
     if csp is None:
       print('CSP is not installed')
       return 1
     csp.delete()
+
+  def pure_info(self):
+    'Prints information about Pure'
+    pure = manager.fetch_extension(acmm.Extension.Pure)
+    if pure is None:
+      print('Pure is not installed.')
+      return 1
+    info = pure.get_ui_info()
+    size = pure.get_size()
+    size, units, _ = drawer.get_readable_filesize(size)
+    size = round(size, 1)
+    units = units.upper()
+    key_to_title = {
+      'version': 'Version',
+      'author': 'Author',
+      'description': 'Description',
+    }
+    indent = 2
+    global_info = format_info({'size': 'Size'}, {'size': f'{size} {units}'}, indent, True)
+    gamma_body = format_info(key_to_title, info.get('gamma'), indent, True)
+    lcs_body = format_info(key_to_title, info.get('lcs'), indent, True)
+    print('\n'.join([
+      typewriter.bolden('Global:'),
+      global_info, '',
+      typewriter.bolden('Gamma:'),
+      gamma_body, '',
+      typewriter.bolden('LCS:'),
+      lcs_body,
+    ]))
+
+  def uninstall_pure(self):
+    'Deletes Pure'
+    pure = manager.fetch_extension(acmm.Extension.Pure)
+    if pure is None:
+      print('Pure is not installed.')
+      return 1
+    pure.delete()
 
 
 cli = CLI()
