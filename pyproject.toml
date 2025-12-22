@@ -20,7 +20,7 @@ authors = [
   { name="Philipp Kosarev", email="philipp.kosarev@gmail.com" },
 ]
 readme = "README.md"
-requires-python = ">=3.8.0"
+requires-python = ">=3.14.0"
 classifiers = [
   "Programming Language :: Python :: 3",
   "Operating System :: OS Independent",
@@ -30,6 +30,7 @@ dependencies = [
   "libjam == 0.1.8",
   "pycountry >= 24.0.0",
   "requests >= 2.0.0",
+  "vdf >= 3.0",
 ]
 
 [project.scripts]
