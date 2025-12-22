@@ -7,6 +7,7 @@ from . import data
 
 # Returns True if all given items exist in root, case insensitive.
 def validate(root: Path, items: list[str or tuple[str, list]]) -> bool:
+  assert type(items) is list
   if not root.is_dir():
     return False
   entries = {entry.name.lower(): entry for entry in os.scandir(root)}
@@ -115,14 +116,15 @@ def is_app(path: Path) -> bool:
 
 # Returns True if given path is a path to CSP.
 def is_csp(path: Path) -> bool:
-  if not path.is_dir():
-    return False
   common_files = data.get('csp-common-files')
   return validate(path, common_files)
 
 # Returns True if given path is a path to Pure.
 def is_pure(path: Path) -> bool:
-  if not path.is_dir():
-    return False
   common_files = data.get('pure-common-files')
+  return validate(path, common_files)
+
+# Returns True if given path is a path to SOL.
+def is_sol(path: Path) -> bool:
+  common_files = data.get('sol-common-files')
   return validate(path, common_files)

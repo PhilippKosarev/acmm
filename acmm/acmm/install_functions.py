@@ -59,9 +59,7 @@ def install_csp(
     base_install(destination, install_dir, install_method)
   return install_dir
 
-def install_pure(
-  asset_path: Path, install_dir: Path, install_method: InstallMethod,
-) -> Path:
+def install_extension_generic(asset_path: Path, install_dir: Path) -> Path:
   apps_dir = asset_path / 'apps'
   content_dir = asset_path / 'content'
   extension_dir = asset_path / 'extension'
@@ -69,3 +67,13 @@ def install_pure(
   for destination in [apps_dir, content_dir, extension_dir, system_dir]:
     base_install(destination, install_dir, InstallMethod.UPDATE)
   return install_dir
+
+def install_pure(
+  asset_path: Path, install_dir: Path, install_method: InstallMethod,
+) -> Path:
+  return install_extension_generic(asset_path, install_dir)
+
+def install_sol(
+  asset_path: Path, install_dir: Path, install_method: InstallMethod,
+) -> Path:
+  return install_extension_generic(asset_path, install_dir)

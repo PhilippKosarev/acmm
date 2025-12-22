@@ -40,6 +40,10 @@ def get_pure_size(self) -> int:
   all_files = data.get('pure-all-files')
   return get_size(self.path, all_files)
 
+def get_sol_size(self) -> int:
+  all_files = data.get('sol-all-files')
+  return get_size(self.path, all_files)
+
 # UI info getters
 def get_csp_ui_info(self) -> dict:
   manifest_file = self.path / 'extension' / 'config' / 'data_manifest.ini'
@@ -87,6 +91,11 @@ def get_pure_ui_info(self) -> dict:
     data['lcs'] = notebook.read_ini(str(lcs_manifest)).get('ABOUT')
   return data
 
+def get_sol_ui_info(self) -> dict:
+  manifest_file = self.path / 'extension' / 'weather' / 'sol' / 'manifest.ini'
+  data = notebook.read_ini(str(manifest_file)).get('ABOUT')
+  return data
+
 # ID getters
 def get_csp_id(self) -> str:
   info = self.get_ui_info()
@@ -102,8 +111,16 @@ def get_pure_id(self) -> str:
   version = info.get('version')
   return f'pure_v{version}'
 
+def get_sol_id(self) -> str:
+  info = self.get_ui_info()
+  if info is None:
+    return 'sol'
+  version = info.get('version')
+  return f'sol_v{version}'
+
 # Delete functions
 def delete(root: Path, items: list[str or tuple[str, list]]):
+  assert items
   entries = {entry.name.lower(): entry for entry in os.scandir(root)}
   for item in items:
     if type(item) is str:
@@ -132,6 +149,10 @@ def delete_pure(self):
   all_files = data.get('pure-all-files')
   delete(self.path, all_files)
 
+def delete_sol(self):
+  all_files = data.get('sol-all-files')
+  delete(self.path, all_files)
+
 # Mapping functions
 csp_functions = {
   'get_id': get_csp_id,
@@ -144,6 +165,12 @@ pure_functions = {
   'get_size': get_pure_size,
   'get_ui_info': get_pure_ui_info,
   'delete': delete_pure,
+}
+sol_functions = {
+  'get_id': get_sol_id,
+  'get_size': get_sol_size,
+  'get_ui_info': get_sol_ui_info,
+  'delete': delete_sol,
 }
 
 # Creating extensions
@@ -163,6 +190,14 @@ extensions_list = [
     install_functions.install_pure,
     [],
     pure_functions,
+  ),
+  (
+    'SOL',
+    None,
+    validate_functions.is_sol,
+    install_functions.install_sol,
+    [],
+    sol_functions,
   ),
 ]
 
