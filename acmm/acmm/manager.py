@@ -129,12 +129,19 @@ class Manager:
         found_lead = False
     return found
 
-  def find_assets(self, path) -> list:
-    path = Path(path)
-    subdirs = [subpath for subpath in path.iterdir() if subpath.is_dir()]
+  def find_assets(self, paths: list) -> list[Asset or Extension]:
+    # Validating given paths
+    for i in range(len(paths)):
+      path = Path(paths[i])
+      if not path.exists():
+        raise FileNotFoundError(f"File '{path}' not found")
+      if not path.is_dir():
+        raise NotADirectoryError(f"Path '{path}' does not lead to a directory")
+      paths[i] = path
+    # Searching for assets
     assets = []
-    for subdir in subdirs:
-      assets += find_assets_in_dir(self, subdir)
+    for path in paths:
+      assets += find_assets_in_dir(self, path)
     return assets
 
   def install(

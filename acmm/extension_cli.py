@@ -6,7 +6,7 @@ import sys
 
 # Internal imports
 from . import acmm
-from .shared import manager, temp_dir, clean_temp_dir
+from .shared import manager, get_temp_dir
 
 # Helper functions
 def format_info(
@@ -31,11 +31,11 @@ def format_info(
 
 # The csp subcli for acmm.
 class CLI:
-  'Manages your Assetto Corsa extensions'
+  'Manage your Assetto Corsa extensions'
   def csp_info(self):
-    'Prints information about CSP'
+    'Print information about CSP'
     csp = manager.fetch_extension(acmm.Extension.CSP)
-    if csp is None:
+    if not csp:
       print('CSP is not installed.')
       return 1
     info = csp.get_ui_info()
@@ -55,8 +55,7 @@ class CLI:
     print(format_info(key_to_title, info))
 
   def install_csp(self):
-    'Downloads and installs CSP'
-    clean_temp_dir()
+    'Download and install CSP'
     typewriter.print_status('Fetching available versions...')
     versions = manager.fetch_csp_versions()
     keys = list(versions.keys())
@@ -94,31 +93,27 @@ class CLI:
     def print_download_progress(todo, done):
       typewriter.print_progress('Downloading', todo, done)
     downloaded_bytes = cloud.download(download_link, print_download_progress)
-    typewriter.clear_lines(0)
-    out_file = temp_dir + '/download.zip'
-    drawer.write_file(out_file, downloaded_bytes)
     def print_extract_progress(todo, done):
       typewriter.print_progress('Extracting', todo, done)
-    out_dir = temp_dir + '/extracted'
-    drawer.extract_archive(out_file, out_dir, print_extract_progress)
+    temp_dir = get_temp_dir()
+    drawer.extract_archive(downloaded_bytes, str(temp_dir), print_extract_progress)
     typewriter.print_status('Installing...')
-    csp = acmm.Extension.CSP(out_dir)
+    csp = acmm.Extension.CSP(temp_dir)
     manager.install(csp, acmm.InstallMethod.UPDATE)
-    clean_temp_dir()
     print('Installed.')
 
   def uninstall_csp(self):
-    'Deletes Custom Shaders Patch'
+    'Delete Custom Shaders Patch'
     csp = manager.fetch_extension(acmm.Extension.CSP)
-    if csp is None:
+    if not csp:
       print('CSP is not installed')
       return 1
     csp.delete()
 
   def pure_info(self):
-    'Prints information about Pure'
+    'Print information about Pure'
     pure = manager.fetch_extension(acmm.Extension.Pure)
-    if pure is None:
+    if not pure:
       print('Pure is not installed.')
       return 1
     info = pure.get_ui_info()
@@ -145,23 +140,23 @@ class CLI:
     ]))
 
   def uninstall_pure(self):
-    'Deletes Pure'
+    'Delete Pure'
     pure = manager.fetch_extension(acmm.Extension.Pure)
-    if pure is None:
+    if not pure:
       print('Pure is not installed.')
       return 1
     pure.delete()
 
 
 cli = CLI()
+captain = Captain(cli)
 
 def main() -> int:
-  captain = Captain(cli)
   function, args = captain.parse()
   return function(*args)
 
 def run_as_subcli(args: list , program: str) -> int:
-  captain = Captain(cli, program=program)
+  captain.program = program
   function, args = captain.parse(args)
   return function(*args)
 

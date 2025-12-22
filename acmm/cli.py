@@ -2,11 +2,12 @@
 
 # Imports
 from libjam import Captain, drawer, typewriter, flashcard
+from pathlib import Path
 import os, sys, time, math
 
 # Internal imports
 from . import acmm
-from .shared import manager, temp_dir, clean_temp_dir
+from .shared import manager, get_temp_dir
 from . import extension_cli
 
 # Helper vars
@@ -135,7 +136,7 @@ def get_delay(num: int, delay_min: float, delay_max: float) -> float:
 class CLI:
   'A CLI mod manager for Assetto Corsa'
   def list(self):
-    'Lists installed mods'
+    'List installed mods'
     assets = get_installed_assets(manager, opts)
     if len(assets) == 0:
       typewriter.print('No mods found.')
@@ -144,47 +145,40 @@ class CLI:
     return 0
 
   def install(self, path: str, *additional_paths):
-    'Installs the specified mod(s)'
-    # Combining paths
-    paths = [path] + list(additional_paths)
+    'Install the specified mod(s)'
     # Checking paths
-    for path in paths:
-      if not drawer.exists(path):
+    paths = [path] + list(additional_paths)
+    for i in range(len(paths)):
+      path = Path(paths[i])
+      if not path.exists():
         print(f"{path}: file not found.")
         return 1
-      if drawer.is_file(path) and not drawer.is_archive_supported(path):
-        print(f"{path}: unsupported archive type.")
+      if path.is_file() and not drawer.is_archive_supported(str(path)):
+        print(f"{path}: unsupported filetype.")
         return 1
-    # Cleaning temp dir
-    clean_temp_dir()
+      paths[i] = path
     # Unpacking
+    unpacked = []
+    temp_dir = get_temp_dir()
     try:
       for path in paths:
-        basename = drawer.get_basename(path)
-        out_dir = temp_dir + '/' + basename
-        if drawer.is_file(path):
+        if path.is_file():
+          out_dir = temp_dir / path.name
           def print_extract_progress(done: int, todo: int):
-            typewriter.print_progress(f"Extracting '{basename}'", done, todo)
-          drawer.extract_archive(path, out_dir, print_extract_progress)
+            typewriter.print_progress(f"Extracting '{path.name}'", done, todo)
+          drawer.extract_archive(str(path), str(out_dir), print_extract_progress)
+          typewriter.clear_lines(0)
+          unpacked.append(out_dir)
         else:
-          def print_copy_progress(done: int, todo: int):
-            typewriter.print_progress(f"Copying '{basename}'", done, todo)
-          drawer.copy_folder(path, out_dir, progress_function=print_copy_progress)
+          unpacked.append(path)
     except KeyboardInterrupt:
       typewriter.clear_lines(0)
       print('Archive extraction aborted.')
       return 130
     # Searching for mods
-    typewriter.print_status('Searching for mods...')
-    try:
-      assets = manager.find_assets(temp_dir)
-    except KeyboardInterrupt:
-      typewriter.clear_lines(0)
-      print('Mod search aborted.')
-      return 130
-    typewriter.clear_lines(0)
+    assets = manager.find_assets(unpacked)
     # Checking found mods
-    if len(assets) == 0:
+    if not assets:
       print('No mods found.')
       return 0
     # Getting user confirmation
@@ -221,12 +215,12 @@ class CLI:
           print('Already installed these mods:')
           print_assets(installed, opts.get('size'))
         return 1
-    clean_temp_dir()
+    typewriter.clear_lines(0)
     print(f"Installed {len(installed)} mods.")
     return 0
 
-  def remove(self, *mod_id: str):
-    'Removes specified mod(s)'
+  def remove(self, *mod_id):
+    'Remove specified mod(s)'
     if not mod_id:
       mod_id = ['']
     # Fetching and filtering mods
@@ -291,19 +285,15 @@ captain.add_option('size',  ['size', 's'],  'Show mod size on disk')
 def main() -> int:
   # Checking whether to use the extension subcli
   all_args = sys.argv[1:]
-  command_index = 0
   for i, arg in enumerate(all_args):
-    command_index = i
-    if not arg.startswith('-'):
-      break
-  if command_index < len(all_args):
-    command = all_args[command_index]
-    if command == 'extension':
-      subargs = all_args[command_index + 1:]
-      return cli.extension(*subargs)
+    if arg.startswith('-'):
+      continue
+    if arg == 'extension':
+      return cli.extension(*all_args[i+1:])
   # Parsing user input
   global opts
-  function, args, opts = captain.parse()
+  function, args, opts = captain.parse(all_args)
+  print(args)
   # Enabling all filters if none are active
   enabled_categories = 0
   for category in fetchable_categories:
