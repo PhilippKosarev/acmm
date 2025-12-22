@@ -32,7 +32,7 @@ def format_info(
 # The csp subcli for acmm.
 class CLI:
   'Manage your Assetto Corsa extensions'
-  def csp_info(self):
+  def show_csp(self):
     'Print information about CSP'
     csp = manager.fetch_extension(acmm.Extension.CSP)
     if not csp:
@@ -41,8 +41,6 @@ class CLI:
     info = csp.get_ui_info()
     size = csp.get_size()
     size, units, _ = drawer.get_readable_filesize(size)
-    size = round(size, 1)
-    units = units.upper()
     info.update({'size': f'{size} {units}'})
     key_to_title = {
       'version': 'Version',
@@ -95,11 +93,11 @@ class CLI:
     downloaded_bytes = cloud.download(download_link, print_download_progress)
     def print_extract_progress(todo, done):
       typewriter.print_progress('Extracting', todo, done)
-    temp_dir = get_temp_dir()
-    drawer.extract_archive(downloaded_bytes, str(temp_dir), print_extract_progress)
-    typewriter.print_status('Installing...')
-    csp = acmm.Extension.CSP(temp_dir)
-    manager.install(csp, acmm.InstallMethod.UPDATE)
+    with get_temp_dir() as temp_dir:
+      drawer.extract_archive(downloaded_bytes, temp_dir, print_extract_progress)
+      typewriter.print_status('Installing...')
+      csp = acmm.Extension.CSP(temp_dir)
+      manager.install(csp, acmm.InstallMethod.UPDATE)
     print('Installed.')
 
   def uninstall_csp(self):
@@ -110,7 +108,7 @@ class CLI:
       return 1
     csp.delete()
 
-  def pure_info(self):
+  def show_pure(self):
     'Print information about Pure'
     pure = manager.fetch_extension(acmm.Extension.Pure)
     if not pure:
@@ -119,8 +117,6 @@ class CLI:
     info = pure.get_ui_info()
     size = pure.get_size()
     size, units, _ = drawer.get_readable_filesize(size)
-    size = round(size, 1)
-    units = units.upper()
     key_to_title = {
       'version': 'Version',
       'author': 'Author',
@@ -147,6 +143,32 @@ class CLI:
       return 1
     pure.delete()
 
+  def show_sol(self):
+    'Print information about SOL'
+    sol = manager.fetch_extension(acmm.Extension.SOL)
+    if not sol:
+      print('SOL is not installed.')
+      return 1
+    info = sol.get_ui_info()
+    size = sol.get_size()
+    size, units, _ = drawer.get_readable_filesize(size)
+    info.update({'size': f'{size} {units}'})
+    key_to_title = {
+      'version': 'Version',
+      'size': 'Size',
+      'name': 'Name',
+      'author': 'Author',
+      'description': 'Description',
+    }
+    print(format_info(key_to_title, info))
+
+  def uninstall_sol(self):
+    'Delete SOL'
+    sol = manager.fetch_extension(acmm.Extension.SOL)
+    if not sol:
+      print('SOL is not installed.')
+      return 1
+    sol.delete()
 
 cli = CLI()
 captain = Captain(cli)

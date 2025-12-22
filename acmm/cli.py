@@ -11,28 +11,12 @@ from .shared import manager, get_temp_dir
 from . import extension_cli
 
 # Helper vars
-asset_info = {
-  acmm.Extension.CSP: {
-    'title': 'Custom Shaders Patch',
-  },
-  acmm.Extension.Pure: {
-    'title': 'Pure',
-  },
-  acmm.Asset.Car: {
-    'title': 'Cars',
-  },
-  acmm.Asset.Track: {
-    'title': 'Tracks',
-  },
-  acmm.Asset.PPFilter: {
-    'title': 'PP Filters',
-  },
-  acmm.Asset.Weather: {
-    'title': 'Weather',
-  },
-  acmm.Asset.App: {
-    'title': 'Apps',
-  },
+asset_titles = {
+  acmm.Asset.Car: 'Cars',
+  acmm.Asset.Track: 'Tracks',
+  acmm.Asset.PPFilter: 'PP Filters',
+  acmm.Asset.Weather: 'Weather',
+  acmm.Asset.App: 'Apps',
 }
 
 # Helper functions
@@ -95,12 +79,14 @@ def print_assets(assets: list, include_size: bool):
   categories = categorise_assets(assets)
   sections = []
   for assets in categories:
-    asset_type = type(assets[0])
-    info = asset_info.get(asset_type)
-    if info is None:
-      raise NotImplementedError(f"Asset of type '{asset_type}' is missing an entry in 'asset_info'")
+    asset_class = assets[0].__class__
+    if hasattr(acmm.Extension, asset_class.__name__):
+      title = 'Extensions'
+    else:
+      title = asset_titles.get(asset_class)
+      assert title
     # Making a category heading
-    heading = typewriter.bolden(info.get('title') + ': ')
+    heading = typewriter.bolden(title + ': ')
     if include_size:
       size = sum([asset.get_size() for asset in assets])
       size, units, _ = drawer.get_readable_filesize(size)
@@ -138,11 +124,10 @@ class CLI:
   def list(self):
     'List installed mods'
     assets = get_installed_assets(manager, opts)
-    if len(assets) == 0:
+    if not assets:
       typewriter.print('No mods found.')
     else:
       print_assets(assets, opts.get('size'))
-    return 0
 
   def install(self, path: str, *additional_paths):
     'Install the specified mod(s)'
@@ -158,66 +143,65 @@ class CLI:
         return 1
       paths[i] = path
     # Unpacking
-    unpacked = []
-    temp_dir = get_temp_dir()
-    try:
-      for path in paths:
-        if path.is_file():
-          out_dir = temp_dir / path.name
-          def print_extract_progress(done: int, todo: int):
-            typewriter.print_progress(f"Extracting '{path.name}'", done, todo)
-          drawer.extract_archive(str(path), str(out_dir), print_extract_progress)
-          typewriter.clear_lines(0)
-          unpacked.append(out_dir)
-        else:
-          unpacked.append(path)
-    except KeyboardInterrupt:
-      typewriter.clear_lines(0)
-      print('Archive extraction aborted.')
-      return 130
-    # Searching for mods
-    assets = manager.find_assets(unpacked)
-    # Checking found mods
-    if not assets:
-      print('No mods found.')
-      return 0
-    # Getting user confirmation
-    print_assets(assets, opts.get('size'))
-    try:
-      if not flashcard.yn_prompt("Install listed mods?"):
-        print("Installation cancelled.")
-        return 0
-    except KeyboardInterrupt:
-      print()
-      return 130
-    # Installing
-    installed = []
-    n_assets = len(assets)
-    for asset in assets:
-      asset_id = asset.get_id()
+    with get_temp_dir() as temp_dir:
       try:
-        typewriter.print_progress(f"Installing '{asset_id}'", len(installed), n_assets)
-        asset = manager.install(asset, acmm.InstallMethod.UPDATE)
-        installed.append(asset)
+        unpacked = []
+        for path in paths:
+          if path.is_file():
+            out_dir = Path(temp_dir) / path.name
+            def print_extract_progress(done: int, todo: int):
+              typewriter.print_progress(f"Extracting '{path.name}'", done, todo)
+            drawer.extract_archive(str(path), str(out_dir), print_extract_progress)
+            typewriter.clear_lines(0)
+            unpacked.append(out_dir)
+          else:
+            unpacked.append(path)
       except KeyboardInterrupt:
         typewriter.clear_lines(0)
-        typewriter.print('Installation aborted.')
-        if len(installed) == 0:
-          print('No mods were installed yet.')
-        else:
-          print('Already installed these mods:')
-          print_assets(installed, opts.get('size'))
+        print('Archive extraction aborted.')
         return 130
-      except NotImplementedError:
-        typewriter.clear_lines(0)
-        print(f"Error: Mod '{asset_id}' is not installable. Aborting installation.")
-        if len(installed) > 0:
-          print('Already installed these mods:')
-          print_assets(installed, opts.get('size'))
-        return 1
-    typewriter.clear_lines(0)
-    print(f"Installed {len(installed)} mods.")
-    return 0
+      # Searching for mods
+      assets = manager.find_assets(unpacked)
+      # Checking found mods
+      if not assets:
+        print('No mods found.')
+        return 0
+      # Getting user confirmation
+      print_assets(assets, opts.get('size'))
+      try:
+        if not flashcard.yn_prompt("Install listed mods?"):
+          print("Installation cancelled.")
+          return 0
+      except KeyboardInterrupt:
+        print()
+        return 130
+      # Installing
+      installed = []
+      n_assets = len(assets)
+      for asset in assets:
+        asset_id = asset.get_id()
+        try:
+          typewriter.print_progress(f"Installing '{asset_id}'", len(installed), n_assets)
+          asset = manager.install(asset, acmm.InstallMethod.UPDATE)
+          installed.append(asset)
+        except KeyboardInterrupt:
+          typewriter.clear_lines(0)
+          typewriter.print('Installation aborted.')
+          if len(installed) == 0:
+            print('No mods were installed yet.')
+          else:
+            print('Already installed these mods:')
+            print_assets(installed, opts.get('size'))
+          return 130
+        except NotImplementedError:
+          typewriter.clear_lines(0)
+          print(f"Error: Mod '{asset_id}' is not installable. Aborting installation.")
+          if len(installed) > 0:
+            print('Already installed these mods:')
+            print_assets(installed, opts.get('size'))
+          return 1
+      typewriter.clear_lines(0)
+      print(f'Installed {len(installed)} mods.')
 
   def remove(self, *mod_id):
     'Remove specified mod(s)'
@@ -293,7 +277,6 @@ def main() -> int:
   # Parsing user input
   global opts
   function, args, opts = captain.parse(all_args)
-  print(args)
   # Enabling all filters if none are active
   enabled_categories = 0
   for category in fetchable_categories:
