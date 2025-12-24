@@ -310,10 +310,10 @@ data = {
               [ 'manifest.ini', 'weather.lua', ('clouds', ['atlas.dds']),
                 ( 'src',
                   [ 'conditions_converter.lua', 'consts.lua', 'light_pollution.lua', 'utils.lua',
-                    'weather_application.lua', 'weather_clouds.lua',
-                    'weather_clouds_pertrack.lua'])])]),
+                    'weather_application.lua', 'weather_clouds.lua'])])]),
         ('weather-controllers', [('base', ['controller.lua', 'manifest.ini'])])])
   ],
+
   # Files present in all versions of Pure
   'pure-common-files': [
     ( 'apps',
@@ -457,6 +457,7 @@ data = {
                   [ 'default_script.lua', 'pure.lua', 'pure_nopp.lua', 'purecandy.lua',
                     'purelinear.lua'])])])])
   ],
+
   # All files that have ever been in any version of Pure
   'pure-all-files': [
     '_license and copyright.txt', 'description.jsgme', 'install_pure.bat', 'uninstall_pure.bat',
@@ -465,12 +466,12 @@ data = {
       [ ( 'lua',
           [ ( 'pureconfig',
               [ '_license and copyright.txt', 'icon.png', 'manifest.ini', 'pureconfig.lua',
-                'reset_dummy.lua',
+                'reset_dummy.lua', 'sync.ffs_db',
                 ('ui', ['configdesign.lua', 'configinfo.lua', 'gl.lua', ('assets', ['strobo.png'])]),
                 ('utils', ['fix_settings.lua', 'groundfog.lua'])]),
             ( 'pureplanner',
               [ '_license and copyright.txt', 'ext_app_controls.ini', 'icon.png', 'manifest.ini',
-                'pureplanner.lua', 'reset_dummy.lua',
+                'pureplanner.lua', 'reset_dummy.lua', 'sync.ffs_db',
                 ('classes', ['connect_dummy.lua', 'container.lua']),
                 ('connection', ['controller.lua', 'extended_controls.lua', 'states.lua']),
                 ( 'help',
@@ -505,7 +506,7 @@ data = {
                             '9.png', 'override.png'])])])]),
             ( 'purepp',
               [ '_license and copyright.txt', 'icon.png', 'manifest.ini', 'purepp.lua',
-                'reset_dummy.lua', ('ui', ['gl.lua', 'ppdesign.lua']),
+                'reset_dummy.lua', 'sync.ffs_db', ('ui', ['gl.lua', 'ppdesign.lua']),
                 ('utils', ['fix_settings.lua', 'groundfog.lua'])])]),
         ( 'python',
           [ ( 'sol_planner',
@@ -621,7 +622,9 @@ data = {
             ( 'pureplanner',
               [('plans', [('daycycle', []), ('stamp', []), ('timed', [])]), ('weatherpresets', [])]),
             ('pureshaders', [])]),
-        ('lua', [('pp-filters', [('pure', ['filter.lua', 'manifest.ini', 'reset_dummy.lua'])])]),
+        ( 'lua',
+          [ ( 'pp-filters',
+              [('pure', ['filter.lua', 'manifest.ini', 'reset_dummy.lua', 'sync.ffs_db'])])]),
         ( 'weather',
           [ ( 'pure',
               [ '_license and copyright.txt', 'manifest.ini', 'pure lcs.code-workspace',
@@ -630,7 +633,7 @@ data = {
                 'pure_ppstate.lua', 'pure_raw.lua', 'pure_render.lua', 'pure_script.lua',
                 'pure_sharing.lua', 'pure_state.lua', 'pure_stellar.lua', 'pure_track.lua',
                 'pure_weather.lua', 'pure_world.lua', 'reset_dummy.lua', 'settings.ini',
-                'weather.lua',
+                'sync.ffs_db', 'weather.lua',
                 ( 'audio',
                   [ '__sol.bank', 'csp_base_audio.lua', 'guids.txt', 'rain.bank', 'sol.bank',
                     'wiper.bank']),
@@ -744,7 +747,7 @@ data = {
             ( 'pure lcs',
               [ '_license and copyright.txt', 'forced_settings.ini', 'manifest.ini', 'moon.dds',
                 'moon_enc.dds', 'moon_end.dds', 'reset_dummy.lua', 'settings.ini', 'spice233.zip',
-                'weather.lua', ('.vscode', ['settings.json']),
+                'sync.ffs_db', 'weather.lua', ('.vscode', ['settings.json']),
                 ('clouds', ['atlas.dds', 'iw_d26.dds', 'noise3d.dds']),
                 ('ppf_scripts', ['default_script.lua', 'pure_nopp.lua']),
                 ( 'pure',
@@ -829,9 +832,9 @@ data = {
                     'weather_clouds_pertrack.lua', 'weather_clouds_types.lua'])])]),
         ( 'weather-controllers',
           [ ( 'purectrl',
-              [ 'cm-drive.lua', 'controller.lua', 'manifest.ini', 'settings.ini',
+              [ 'cm-drive.lua', 'controller.lua', 'manifest.ini', 'settings.ini', 'sync.ffs_db',
                 'weather_params.lua', ('.vscode', ['settings.json'])]),
-            ('purectrl static', ['controller.lua', 'manifest.ini']),
+            ('purectrl static', ['controller.lua', 'manifest.ini', 'sync.ffs_db']),
             ( 'sol2',
               [ 'cm-drive.lua', 'controller.lua', 'manifest.ini', 'reset_dummy.lua', 'settings.ini',
                 'sol__interface.lua', 'sol__shared_memory__backup.lua', 'tools.lua', 'utils_lut.lua',
@@ -841,16 +844,17 @@ data = {
       [ ( 'cfg',
           [ ( 'ppfilters',
               [ 'pure.ini', 'purecandy.ini', 'purehdr-eye.ini', 'purehdr.ini', 'purelinear.ini',
-                'puresimple.ini', 'purevr.ini',
+                'puresimple.ini', 'purevr.ini', 'sync.ffs_db',
                 ( 'pure_scripts',
                   [ 'default_script.lua', 'pure.lua', 'pure_nopp.lua', 'purecandy.lua',
-                    'purehdr-eye.lua', 'purehdr.lua', 'purelinear.lua', 'purevr.lua',
+                    'purehdr-eye.lua', 'purehdr.lua', 'purelinear.lua', 'purevr.lua', 'sync.ffs_db',
                     ('pure_ui', ['pure.ui', 'purebg.png', 'purelogo.png'])]),
                 ( 'purelcs_scripts',
                   [ 'pure.lua', 'purecandy.lua', 'purehdr.lua', 'purelinear.lua', 'purevr.lua',
                     ('pure', ['purelcs_hdr.lua', 'purelcs_screen.lua', 'purelcs_vr.lua']),
                     ('pure_ui', ['pure.ui', 'purebg.png', 'purelogo.png'])])])])])
   ],
+
   # Files present in all versions of SOL
   'sol-common-files': [
     ( 'apps',
@@ -942,6 +946,7 @@ data = {
               [ '__sol.ini', '__sol_extra.ini', 'custom config example.ini',
                 ('sol_custom_configs', ['__sol.lua', '__sol_basic_cc.lua', '__sol_extra.lua'])])])])
   ],
+
   # All files that have ever been in any version of SOL
   'sol-all-files': [
     'description.jsgme', 'soluninstall.bat',
