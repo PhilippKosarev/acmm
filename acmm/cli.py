@@ -3,7 +3,7 @@
 # Imports
 from libjam import Captain, drawer, typewriter, flashcard
 from pathlib import Path
-import os, sys, time, math
+import sys, time, math
 
 # Internal imports
 from . import acmm
@@ -20,52 +20,42 @@ asset_titles = {
 }
 
 # Helper functions
-
 def asset_class_to_key(asset_class: acmm.Asset) -> str:
   return asset_class.__name__.lower()
 
-def categorise_assets(assets: list) -> list:
-  categories = {}
-  for asset in assets:
-    key = asset_class_to_key(type(asset))
-    if key not in categories:
-      categories[key] = [asset]
-    else:
-      categories[key].append(asset)
-  return list(categories.values())
-
-def filter_assets_by_origin(assets: list, opts: dict) -> list:
-  filtered_assets = []
-  for asset in assets:
-    if opts.get('all'):
-      filtered_assets.append(asset)
-    elif opts.get('kunos'):
-      if asset.get_origin() is acmm.AssetOrigin.KUNOS:
-        filtered_assets.append(asset)
-    else:
-      if asset.get_origin() is acmm.AssetOrigin.MOD:
-        filtered_assets.append(asset)
-  return filtered_assets
-
-def get_installed_assets(manager: acmm.Manager, opts: dict) -> list:
+def get_installed_assets() -> list[acmm.Asset]:
   asset_classes = acmm.Asset.get_classes()
-  assets = []
+  all_assets = []
   for asset_class in asset_classes:
     # Checking if category is enabled
     key = asset_class_to_key(asset_class)
     enabled = opts.get(key)
-    if enabled is not None:
-      if not enabled:
-        continue
+    if not enabled:
+      continue
     # Fetching
-    assets += (
-      filter_assets_by_origin(manager.fetch_assets(asset_class), opts)
-    )
-  return assets
+    assets = manager.fetch_assets(asset_class)
+    filtered_assets = []
+    for asset in assets:
+      if opts.get('all'):
+        filtered_assets.append(asset)
+      elif opts.get('kunos') and opts.get('dlc'):
+        if asset.get_origin() is not acmm.AssetOrigin.MOD:
+          filtered_assets.append(asset)
+      elif opts.get('kunos'):
+        if asset.get_origin() is not acmm.AssetOrigin.KUNOS:
+          filtered_assets.append(asset)
+      elif opts.get('dlc'):
+        if asset.get_origin() is acmm.AssetOrigin.DLC:
+          filtered_assets.append(asset)
+      else:
+        if asset.get_origin() is acmm.AssetOrigin.MOD:
+          filtered_assets.append(asset)
+    all_assets += filtered_assets
+  return all_assets
 
 def filter_by_id(
-  assets: list, search_terms: list,
-) -> list:
+  assets: list[acmm.Asset], search_terms: list,
+) -> list[acmm.Asset]:
   matching = []
   search_terms = [search_term.lower() for search_term in search_terms]
   for asset in assets:
@@ -75,7 +65,17 @@ def filter_by_id(
         matching.append(asset)
   return matching
 
-def print_assets(assets: list, include_size: bool):
+def categorise_assets(assets: list[acmm.Asset]) -> list[acmm.Asset]:
+  categories = {}
+  for asset in assets:
+    key = asset_class_to_key(type(asset))
+    if key not in categories:
+      categories[key] = [asset]
+    else:
+      categories[key].append(asset)
+  return list(categories.values())
+
+def print_assets(assets: list[acmm.Asset]):
   categories = categorise_assets(assets)
   sections = []
   for assets in categories:
@@ -87,7 +87,7 @@ def print_assets(assets: list, include_size: bool):
       assert title
     # Making a category heading
     heading = typewriter.bolden(title + ': ')
-    if include_size:
+    if opts.get('size'):
       size = sum([asset.get_size() for asset in assets])
       size, units, _ = drawer.get_readable_filesize(size)
       size = round(size, 1)
@@ -118,16 +118,15 @@ def get_delay(num: int, delay_min: float, delay_max: float) -> float:
   delay = (delay * (delay_max - delay_min)) + delay_min
   return delay
 
-# The command line interface for acmm.
 class CLI:
   'A CLI mod manager for Assetto Corsa'
   def list(self):
     'List installed mods'
-    assets = get_installed_assets(manager, opts)
+    assets = get_installed_assets()
     if not assets:
-      typewriter.print('No mods found.')
+      print('No mods found.')
     else:
-      print_assets(assets, opts.get('size'))
+      print_assets(assets)
 
   def install(self, path: str, *additional_paths):
     'Install the specified mod(s)'
@@ -167,7 +166,7 @@ class CLI:
         print('No mods found.')
         return 0
       # Getting user confirmation
-      print_assets(assets, opts.get('size'))
+      print_assets(assets)
       try:
         if not flashcard.yn_prompt("Install listed mods?"):
           print("Installation cancelled.")
@@ -191,14 +190,14 @@ class CLI:
             print('No mods were installed yet.')
           else:
             print('Already installed these mods:')
-            print_assets(installed, opts.get('size'))
+            print_assets(installed)
           return 130
         except NotImplementedError:
           typewriter.clear_lines(0)
           print(f"Error: Mod '{asset_id}' is not installable. Aborting installation.")
           if len(installed) > 0:
             print('Already installed these mods:')
-            print_assets(installed, opts.get('size'))
+            print_assets(installed)
           return 1
       typewriter.clear_lines(0)
       print(f'Installed {len(installed)} mods.')
@@ -208,13 +207,13 @@ class CLI:
     if not mod_id:
       mod_id = ['']
     # Fetching and filtering mods
-    assets = get_installed_assets(manager, opts)
+    assets = get_installed_assets()
     assets = filter_by_id(assets, mod_id)
     n_assets = len(assets)
     if len(assets) == 0:
       typewriter.print('No mods found matching any of the terms.')
       return 0
-    print_assets(assets, opts.get('size'))
+    print_assets(assets)
     try:
       if not flashcard.yn_prompt(f'Remove the listed {n_assets} mods?'):
         return 0
@@ -259,12 +258,13 @@ fetchable_categories = [
 for category in fetchable_categories:
   captain.add_option(
     category, [category, category[0]],
-    f'Only list/remove {category} mods',
+    f'Filter for {category} assets',
   )
 # Adding other options
-captain.add_option('all',   ['all', 'A'],   'Do not filter out Kunos assets')
-captain.add_option('kunos', ['kunos', 'k'], 'Filter out non Kunos assets')
-captain.add_option('size',  ['size', 's'],  'Show mod size on disk')
+captain.add_option('all',   ['all', 'A'],   'Show all assets')
+captain.add_option('kunos', ['kunos', 'k'], 'Show Kunos assets')
+captain.add_option('dlc',   ['dlc', 'd'],   'Show DLC assets')
+captain.add_option('size',  ['size', 's'],  "Show mods' disk usage")
 
 def main() -> int:
   # Checking whether to use the extension subcli
